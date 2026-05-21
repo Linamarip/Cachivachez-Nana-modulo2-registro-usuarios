@@ -1,5 +1,6 @@
 <script setup>
 import nana_registro from './components/nana_registro.vue'
+import nana_productos from './components/nana_productos.vue' // <-- Importamos productos correctamente
 
 import { ref } from 'vue'
 
@@ -9,9 +10,8 @@ const email = ref('')
 const contrasenia = ref('')
 const mensajeError = ref('')
 
-// Función para enviar los datos al servidor de Java
+// Función para enviar los datos al servidor JavaScript
 const manejarInicioSesion = async () => {
-  // Limpiar mensajes previos
   mensajeError.value = ''
 
   if (!email.value || !contrasenia.value) {
@@ -20,7 +20,6 @@ const manejarInicioSesion = async () => {
   }
 
   try {
-    // Apunta al puerto de tu servidor_nana (por defecto suele ser 8080)
     const respuesta = await fetch('http://localhost:8080/servidor_nana/login', {
       method: 'POST',
       headers: {
@@ -33,9 +32,8 @@ const manejarInicioSesion = async () => {
     })
 
     if (respuesta.ok) {
-      const datos = await respuesta.json()
       alert('¡Bienvenido a Cachivachez NANA!')
-      // Aquí manejarás la redirección al módulo de productos más adelante
+      pantallaActual.value = 'productos' // Al iniciar sesión con éxito, lo mandamos al catálogo
     } else {
       mensajeError.value = 'Credenciales inválidas. El usuario debe realizar el Registro.'
     }
@@ -47,16 +45,19 @@ const manejarInicioSesion = async () => {
 
 <template>
   <div class="min-h-screen bg-[#c8d695] font-sans text-gray-800">
-    <!-- 1. BARRA DE NAVEGACIÓN (Permanente) -->
+    <!-- 1. BARRA DE NAVEGACIÓN -->
     <nav class="flex items-center justify-between px-8 py-4 bg-white/30 backdrop-blur-sm">
       <div class="flex gap-8 items-center">
         <!-- Evento click para regresar al Inicio de Sesión -->
         <a href="#" @click.prevent="pantallaActual = 'inicio'" class="flex items-center gap-1 font-bold hover:text-green-800">
           <span class="text-xl">🏠</span> Inicio
         </a>
-        <div class="group relative cursor-pointer font-semibold">
+        
+        <!-- Pestaña de Productos Vinculada sin duplicaciones -->
+        <div @click="pantallaActual = 'productos'" class="group relative cursor-pointer font-semibold hover:text-green-800 transition-colors">
           Productos <span>∨</span>
         </div>
+        
         <div class="group relative cursor-pointer font-semibold">
           Acerca de nosotros <span>∨</span>
         </div>
@@ -69,7 +70,7 @@ const manejarInicioSesion = async () => {
       </div>
     </nav>
 
-    <!-- 2. SECCIÓN CENTRAL (LOGO REDONDEADO CON SOMBRA Y LEMA - Permanente) -->
+    <!-- 2. SECCIÓN CENTRAL (LOGO Y LEMA) -->
     <header class="flex flex-col items-center justify-center py-12 text-center">
       <div class="max-w-md mx-auto mb-4 p-4 bg-white rounded-2xl shadow-xl flex items-center justify-center">
         <img 
@@ -83,20 +84,18 @@ const manejarInicioSesion = async () => {
       </p>
     </header>
 
-    <!-- 3. CONTENIDO DINÁMICO (Intercambia entre Login y Registro) -->
+    <!-- 3. CONTENIDO DINÁMICO (Intercambia pantallas según la variable) -->
     <main class="max-w-4xl mx-auto px-6 py-8">
       
-      <!-- VISTA A: MÓDULO DE INICIO DE SESIÓN (Se muestra si pantallaActual es 'inicio') -->
+      <!-- VISTA A: INICIO DE SESIÓN -->
       <div v-if="pantallaActual === 'inicio'">
         <h2 class="text-3xl font-bold mb-6">Inicio de Sesión</h2>
         
-        <!-- Mensaje de Alerta/Error dinámico -->
         <div v-if="mensajeError" class="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm font-semibold">
           {{ mensajeError }}
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
-          <!-- Campo Email -->
           <div class="flex flex-col gap-2">
             <label class="font-semibold">Iniciar sesión con su email</label>
             <input 
@@ -107,7 +106,6 @@ const manejarInicioSesion = async () => {
             />
           </div>
 
-          <!-- Campo Contraseña -->
           <div class="flex flex-col gap-2">
             <label class="font-semibold">Ingrese su contraseña</label>
             <input 
@@ -118,7 +116,6 @@ const manejarInicioSesion = async () => {
             />
           </div>
 
-          <!-- Botón y Registro -->
           <div class="flex flex-col gap-2">
             <button 
               @click="manejarInicioSesion"
@@ -126,7 +123,6 @@ const manejarInicioSesion = async () => {
             >
               Inicio de sesión
             </button>
-            <!-- Evento click en la palabra Registro para saltar al nuevo componente -->
             <p class="text-sm text-center font-medium">
               El usuario debe realizar el 
               <span @click="pantallaActual = 'registro'" class="font-bold underline cursor-pointer hover:text-purple-900">
@@ -137,14 +133,19 @@ const manejarInicioSesion = async () => {
         </div>
       </div>
 
-      <!-- VISTA B: MÓDULO DE REGISTRO (Se muestra si pantallaActual es 'registro') -->
+      <!-- VISTA B: MÓDULO DE REGISTRO -->
       <div v-else-if="pantallaActual === 'registro'">
         <nana_registro />
       </div>
 
+      <!-- VISTA C: MÓDULO DE PRODUCTOS -->
+      <div v-else-if="pantallaActual === 'productos'">
+        <nana_productos />
+      </div>
+
     </main>
 
-    <!-- 4. FOOTER (Permanente) -->
+    <!-- 4. FOOTER -->
     <footer class="mt-20 border-t border-black/10 py-6 px-10 flex flex-col md:flex-row justify-between items-center text-sm">
       <p>©2025 Cachivachez NANA. Todos los derechos reservados</p>
       <div class="flex flex-col gap-1 text-right">
