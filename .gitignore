@@ -1,0 +1,13 @@
+# Ignorar carpetas de compilación de Java
+servidor_nana/bin/
+servidor_nana/fuentes.txt
+servidor_nana/rutas_reales.txt
+
+# Ignorar carpetas de dependencias del Frontend
+nanainicio/node_modules/
+nanainicio/dist/
+
+# Ignorar archivos del sistema y entornos virtuales
+.DS_Store
+Thumbs.db
+.vscode/
