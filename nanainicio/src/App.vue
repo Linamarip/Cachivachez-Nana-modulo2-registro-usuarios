@@ -1,6 +1,7 @@
 <script setup>
 import nana_registro from './components/nana_registro.vue'
-import nana_productos from './components/nana_productos.vue' // <-- Importamos productos correctamente
+import nana_productos from './components/nana_productos.vue' 
+import nana_carrito from './components/nana_carrito.vue'
 
 import { ref } from 'vue'
 
@@ -9,6 +10,21 @@ const pantallaActual = ref('inicio')
 const email = ref('')
 const contrasenia = ref('')
 const mensajeError = ref('')
+
+// Arreglo global para almacenar los productos seleccionados
+const carrito = ref([])
+
+// Función para agregar un producto al carrito o aumentar su cantidad
+const agregarAlCarrito = (producto) => {
+  const existe = carrito.value.find(item => item.id === producto.id)
+  if (existe) {
+    existe.cantidad++
+  } else {
+    // Agregamos el producto con cantidad inicial de 1
+    carrito.value.push({ ...producto, cantidad: 1 })
+  }
+  alert(`¡${producto.nombre} agregado al carrito!`)
+}
 
 // Función para enviar los datos al servidor JavaScript
 const manejarInicioSesion = async () => {
@@ -33,7 +49,7 @@ const manejarInicioSesion = async () => {
 
     if (respuesta.ok) {
       alert('¡Bienvenido a Cachivachez NANA!')
-      pantallaActual.value = 'productos' // Al iniciar sesión con éxito, lo mandamos al catálogo
+      pantallaActual.value = 'productos' 
     } else {
       mensajeError.value = 'Credenciales inválidas. El usuario debe realizar el Registro.'
     }
@@ -63,10 +79,21 @@ const manejarInicioSesion = async () => {
         </div>
       </div>
       
-      <!-- Buscador -->
-      <div class="relative">
-        <input type="text" placeholder="Buscador" class="rounded-full px-4 py-1 border-none focus:ring-2 focus:ring-green-600 outline-none w-64 shadow-sm" />
-        <span class="absolute right-3 top-1">🔍</span>
+      <!-- Buscador y Botón del Carrito 🛒 -->
+      <div class="flex items-center gap-6">
+        <div class="relative">
+          <input type="text" placeholder="Buscador" class="rounded-full px-4 py-1 border-none focus:ring-2 focus:ring-green-600 outline-none w-64 shadow-sm" />
+          <span class="absolute right-3 top-1">🔍</span>
+        </div>
+
+        <!-- 🛒 ICONO DEL CARRITO CON CONTADOR DE PRODUCTOS -->
+        <button @click="pantallaActual = 'carrito'" class="relative font-bold text-2xl hover:text-purple-800 transition-all active:scale-95">
+          🛒
+          <!-- Burbuja morada con la cantidad de artículos -->
+          <span class="absolute -top-2 -right-2 bg-[#6b4e8b] text-white text-[10px] font-black rounded-full w-5 h-5 flex items-center justify-center shadow">
+            {{ carrito.reduce((sum, item) => sum + item.cantidad, 0) }}
+          </span>
+        </button>
       </div>
     </nav>
 
@@ -84,7 +111,7 @@ const manejarInicioSesion = async () => {
       </p>
     </header>
 
-    <!-- 3. CONTENIDO DINÁMICO (Intercambia pantallas según la variable) -->
+    <!-- 3. CONTENIDO DINÁMICO -->
     <main class="max-w-4xl mx-auto px-6 py-8">
       
       <!-- VISTA A: INICIO DE SESIÓN -->
@@ -140,7 +167,12 @@ const manejarInicioSesion = async () => {
 
       <!-- VISTA C: MÓDULO DE PRODUCTOS -->
       <div v-else-if="pantallaActual === 'productos'">
-        <nana_productos />
+        <nana_productos :onAgregar="agregarAlCarrito" />
+      </div>
+
+      <!-- VISTA D: MÓDULO DE CARRITO DE COMPRAS (Corregido: Ahora está dentro de main) -->
+      <div v-else-if="pantallaActual === 'carrito'">
+        <nana_carrito :items="carrito" />
       </div>
 
     </main>

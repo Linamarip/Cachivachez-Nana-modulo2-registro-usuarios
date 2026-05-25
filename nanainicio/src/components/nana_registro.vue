@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full bg-[#c8d695] px-4">
+  <div class="w-full bg-[#c8d695] px-4 pb-12">
     <!-- Título del Módulo -->
     <h2 class="text-3xl font-bold mb-6 text-gray-800 text-left">Registro</h2>
     
@@ -68,7 +68,6 @@
             v-model="formulario.email"
             type="email" 
             placeholder="email@email.com" 
-            autocomplete="off"
             required
             class="bg-[#8fa15b] placeholder-gray-200 text-white rounded-lg p-3 outline-none border border-transparent focus:border-white shadow-inner w-full" 
           />
@@ -122,79 +121,123 @@
       <div class="md:col-span-2 flex flex-col items-center mt-6">
         <button 
           type="submit" 
-          class="bg-[#6b4e8b] hover:bg-[#5a3f75] text-white font-bold py-3 px-16 rounded-lg shadow-lg transition-all active:scale-95 text-lg"
+          class="bg-[#6b4e8b] hover:bg-[#5a3f75] text-white font-bold py-3 px-16 rounded-lg shadow-lg transition-all active:scale-95 text-lg cursor-pointer"
         >
           Registro
         </button>
       </div>
-
     </form>
+
+    <!-- TABLA DE CONTROL CRUD (CONSULTA Y ELIMINACIÓN) -->
+    <div class="mt-12 bg-white rounded-3xl p-6 shadow-xl border border-gray-100 max-w-full overflow-hidden">
+      <h3 class="text-2xl font-bold text-gray-800 mb-4 text-left">Usuarios Registrados (Control CRUD)</h3>
+      
+      <div class="overflow-x-auto rounded-xl border border-gray-100">
+        <table class="w-full text-left border-collapse text-sm">
+          <thead class="bg-gray-50 text-gray-700 uppercase text-xs font-bold border-b border-gray-100">
+            <tr>
+              <th class="p-4">Nombre Completo</th>
+              <th class="p-4">Cédula</th>
+              <th class="p-4">Email</th>
+              <th class="p-4">Celular</th>
+              <th class="p-4">Ciudad</th>
+              <th class="p-4 text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100 text-gray-600">
+            <tr v-for="user in listaUsuarios" :key="user.id" class="hover:bg-gray-50 transition-colors">
+              <td class="p-4 font-semibold text-gray-800">{{ user.nombre }} {{ user.apellido }}</td>
+              <td class="p-4">{{ user.cedula }}</td>
+              <td class="p-4">{{ user.email }}</td>
+              <td class="p-4">{{ user.celular }}</td>
+              <td class="p-4">{{ user.ciudad }}</td>
+              <td class="p-4 text-center">
+                <button @click="eliminarUsuario(user.id)" class="bg-red-500 hover:bg-red-600 text-white text-xs font-bold py-2 px-4 rounded-lg shadow transition-all active:scale-95 cursor-pointer">
+                  Eliminar 🗑️
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 
 const formulario = ref({
-  nombre: '',
-  apellido: '',
-  cedula: '',
-  fechaNacimiento: '',
-  email: '',
-  celular: '',
-  direccion: '',
-  ciudad: '',
-  departamento: ''
+  nombre: '', apellido: '', cedula: '', fechaNacimiento: '',
+  email: '', celular: '', direccion: '', ciudad: '', departamento: ''
 });
 
 const mensajeExito = ref('');
 const mensajeError = ref('');
+const listaUsuarios = ref([]);
 
+// Obtener usuarios de MySQL (Consulta CRUD)
+const obtenerUsuarios = async () => {
+  try {
+    const respuesta = await fetch('http://localhost:8080/servidor_nana/usuarios');
+    if (respuesta.ok) {
+      listaUsuarios.value = await respuesta.json();
+    }
+  } catch (error) {
+    console.error("Error consultando usuarios:", error);
+  }
+};
+
+// Eliminar usuario de MySQL (Eliminación CRUD)
+const eliminarUsuario = async (id) => {
+  if (!confirm("¿Está seguro de que desea eliminar este usuario de forma permanente?")) return;
+  
+  try {
+    const respuesta = await fetch(`http://localhost:8080/servidor_nana/usuarios/${id}`, {
+      method: 'DELETE'
+    });
+    if (respuesta.ok) {
+      alert("Usuario eliminado correctamente.");
+      obtenerUsuarios();
+    }
+  } catch (error) {
+    console.error("Error eliminando usuario:", error);
+  }
+};
+
+// Insertar datos de registro (Inserción CRUD)
 const manejarRegistro = async () => {
   mensajeExito.value = '';
   mensajeError.value = '';
 
-  // Validamos que se haya seleccionado una fecha
   if (!formulario.value.fechaNacimiento) {
     mensajeError.value = "Por favor, seleccione su fecha de nacimiento.";
     return;
   }
 
-  // Creamos el paquete de datos en el formato exacto que espera extraerJson en Java
-  const datosRegistro = {
-    nombre: formulario.value.nombre,
-    apellido: formulario.value.apellido,
-    cedula: formulario.value.cedula,
-    fechaNacimiento: formulario.value.fechaNacimiento,
-    email: formulario.value.email,
-    celular: formulario.value.celular,
-    direccion: formulario.value.direccion,
-    ciudad: formulario.value.ciudad,
-    departamento: formulario.value.departamento,
-    contrasenia: "123456" // Contraseña temporal por defecto para la prueba
-  };
-
   try {
     const respuesta = await fetch('http://localhost:8080/servidor_nana/registro', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json' // Indicamos que enviamos JSON puro
+      headers: { 
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify(datosRegistro)
+      body: JSON.stringify(formulario.value)
     });
 
     if (respuesta.ok) {
       mensajeExito.value = "Se envió a su email la confirmación";
-      // Limpiar formulario al terminar con éxito
       Object.keys(formulario.value).forEach(key => formulario.value[key] = '');
+      obtenerUsuarios();
     } else {
       mensajeError.value = "Hubo un problema al procesar el registro en el servidor.";
     }
   } catch (error) {
     console.error("Error de red:", error);
-    mensajeError.value = "No se pudo conectar con el servidor de Java.";
+    mensajeError.value = "No se pudo conectar con el servidor.";
   }
 };
 
-
+onMounted(() => {
+  obtenerUsuarios();
+});
 </script>

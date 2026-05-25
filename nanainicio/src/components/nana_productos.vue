@@ -50,9 +50,12 @@
               ${{ Number(producto.precio).toLocaleString('es-CO') }}
             </p>
 
-            <!-- Botón Morado de Compra (Estilo exacto de tu Login) -->
-            <button class="w-full bg-[#6b4e8b] hover:bg-[#5a3f75] text-white font-bold py-3.5 px-4 rounded-xl shadow-md transition-all active:scale-95 text-sm tracking-wide uppercase">
-              Agregar al Carrito
+            <!-- Botón Morado de Compra -->
+            <button 
+              @click="props.onAgregar(producto)" 
+              class="w-full bg-[#6b4e8b] hover:bg-[#5a3f75] text-white font-bold py-3 px-4 rounded-xl shadow-md transition-all active:scale-95 mt-3 text-sm tracking-wide uppercase"
+            >
+               Agregar al Carrito
             </button>
           </div>
         </div>
@@ -64,16 +67,20 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, defineProps } from 'vue';
+
+// Definición correcta de propiedades recibidas desde App.vue
+const props = defineProps({
+  onAgregar: Function
+});
 
 // Lista reactiva de productos
 const listaProductos = ref([]);
 
-// Función mágica de Vite para cargar imágenes locales dinámicamente desde la carpeta assets
+// CORRECCIÓN DE RUTA: Uso de ruta absoluta compatible con Vite para evitar pérdidas de imágenes
 const obtenerImagenLocal = (nombreImagen) => {
   if (!nombreImagen) return 'https://placeholder.com';
-  // Busca el archivo directamente en tu carpeta src/assets/
-  return new URL(`../assets/${nombreImagen}`, import.meta.url).href;
+  return new URL(`/src/assets/${nombreImagen}`, import.meta.url).href;
 };
 
 const cargarProductos = async () => {
@@ -88,7 +95,7 @@ const cargarProductos = async () => {
 };
 
 onMounted(() => {
-  // Datos iniciales que alimentan el catálogo de inmediato matching con tu servidor backend
+  // Datos de respaldo estáticos combinados con los nombres de tu carpeta assets
   listaProductos.value = [
     { id: 1, codigo: '001', nombre: 'Buso', categoria: 'Oakley', precio: 190000, imagen_url: 'buso.jpg' },
     { id: 2, codigo: '002', nombre: 'Camiseta', categoria: 'Oakley', precio: 90000, imagen_url: 'camiseta.jpg' },
@@ -97,4 +104,3 @@ onMounted(() => {
   cargarProductos();
 });
 </script>
-
