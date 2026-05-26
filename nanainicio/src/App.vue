@@ -3,6 +3,7 @@ import nana_registro from './components/nana_registro.vue'
 import nana_productos from './components/nana_productos.vue' 
 import nana_carrito from './components/nana_carrito.vue'
 import nana_pagos from './components/nana_pagos.vue'
+import nana_seguimiento from './components/nana_seguimiento.vue'
 
 import { ref } from 'vue'
 
@@ -61,9 +62,10 @@ const manejarInicioSesion = async () => {
 
 const finalizarPedido = (metodoPago) => {
   alert(`Cachivaches NANA: Su pedido ha sido registrado con método: ${metodoPago}.`);
-  carrito.value = []; // Limpiamos el carrito automáticamente
-  pantallaActual.value = 'inicio'; // Lo regresamos al inicio o catálogo
+  carrito.value = []; // Limpiamos el carrito
+  pantallaActual.value = 'seguimiento'; // <-- CAMBIA ESTA LÍNEA (Ahora va a seguimiento)
 }
+
 
 const obtenerTotalCarrito = () => {
   if (carrito.value.length === 0) return 0;
@@ -193,13 +195,14 @@ const obtenerTotalCarrito = () => {
         />
       </div>
 
-
-      <!-- VISTA E: MÓDULO DE PAGOS (NUEVA CONDICIÓN) -->
+            <!-- VISTA E: MÓDULO DE PAGOS -->
       <div v-else-if="pantallaActual === 'pagos'">
-        <nana_pagos 
-          :totalPedido="obtenerTotalCarrito()" 
-          :onConfirmarPedido="finalizarPedido" 
-        />
+        <nana_pagos :totalPedido="obtenerTotalCarrito()" :onConfirmarPedido="finalizarPedido" />
+      </div>
+
+      <!-- VISTA F: MÓDULO DE SEGUIMIENTO (NUEVA CONDICIÓN) -->
+      <div v-else-if="pantallaActual === 'seguimiento'">
+        <nana_seguimiento />
       </div>
 
     </main>
