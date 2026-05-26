@@ -4,6 +4,8 @@ import nana_productos from './components/nana_productos.vue'
 import nana_carrito from './components/nana_carrito.vue'
 import nana_pagos from './components/nana_pagos.vue'
 import nana_seguimiento from './components/nana_seguimiento.vue'
+import nana_calificaciones from './components/nana_calificaciones.vue'
+
 
 import { ref } from 'vue'
 
@@ -93,6 +95,11 @@ const obtenerTotalCarrito = () => {
         <div class="group relative cursor-pointer font-semibold">
           Acerca de nosotros <span>∨</span>
         </div>
+
+        <div @click="pantallaActual = 'calificaciones'" class="group relative cursor-pointer font-semibold hover:text-green-800 transition-colors">
+          Opiniones <span>∨</span>
+        </div>
+
       </div>
       
       <!-- Buscador y Botón del Carrito 🛒 -->
@@ -205,6 +212,11 @@ const obtenerTotalCarrito = () => {
         <nana_seguimiento />
       </div>
 
+      <!-- VISTA G: MÓDULO DE CALIFICACIONES (AQUÍ PONES LA NUEVA CONDICIÓN) -->
+      <div v-else-if="pantallaActual === 'calificaciones'">
+        <nana_calificaciones />
+      </div>
+      
     </main>
 
     <!-- 4. FOOTER -->

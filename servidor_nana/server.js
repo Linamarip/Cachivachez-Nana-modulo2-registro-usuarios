@@ -135,6 +135,33 @@ app.get('/servidor_nana/productos', (req, res) => {
     });
 });
 
+// ====================================================================
+// 📲 NUEVAS RUTAS: MÓDULO DE CALIFICACIONES Y OPINIONES (Pégalas aquí)
+// ====================================================================
+
+// --- RUTA 6: AGREGAR CALIFICACIÓN (Inserción CRUD) ---
+app.post('/servidor_nana/calificaciones', (req, res) => {
+    const { nombre, comentario, estrellas } = req.body;
+    const sql = 'INSERT INTO calificaciones (nombre_usuario, comentario, estrellas) VALUES (?, ?, ?)';
+    db.query(sql, [nombre, comentario, estrellas], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ mensaje: '¡Gracias por tu opinión!' });
+    });
+});
+
+// --- RUTA 7: OBTENER CALIFICACIONES (Consulta CRUD) ---
+app.get('/servidor_nana/calificaciones', (req, res) => {
+    const sql = 'SELECT * FROM calificaciones ORDER BY creado_en DESC';
+    db.query(sql, (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(results);
+    });
+});
+
+// ====================================================================
+// CONFIGURACIÓN DE ENCENDIDO (Esto ya lo tienes y se queda abajo)
+// ====================================================================
+
 const PUERTO = 8080;
 app.listen(PUERTO, () => {
     console.log(`=======================================`);
