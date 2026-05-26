@@ -2,6 +2,7 @@
 import nana_registro from './components/nana_registro.vue'
 import nana_productos from './components/nana_productos.vue' 
 import nana_carrito from './components/nana_carrito.vue'
+import nana_pagos from './components/nana_pagos.vue'
 
 import { ref } from 'vue'
 
@@ -57,6 +58,19 @@ const manejarInicioSesion = async () => {
     mensajeError.value = 'Error al conectar con el servidor backend.'
   }
 }
+
+const finalizarPedido = (metodoPago) => {
+  alert(`Cachivaches NANA: Su pedido ha sido registrado con método: ${metodoPago}.`);
+  carrito.value = []; // Limpiamos el carrito automáticamente
+  pantallaActual.value = 'inicio'; // Lo regresamos al inicio o catálogo
+}
+
+const obtenerTotalCarrito = () => {
+  if (carrito.value.length === 0) return 0;
+  const subtotal = carrito.value.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
+  return subtotal + 15000; // Suma los $15.000 de envío de tus prototipos
+}
+
 </script>
 
 <template>
@@ -170,9 +184,22 @@ const manejarInicioSesion = async () => {
         <nana_productos :onAgregar="agregarAlCarrito" />
       </div>
 
-      <!-- VISTA D: MÓDULO DE CARRITO DE COMPRAS (Corregido: Ahora está dentro de main) -->
+      <!-- VISTA D: MÓDULO DE CARRITO DE COMPRAS -->
       <div v-else-if="pantallaActual === 'carrito'">
-        <nana_carrito :items="carrito" />
+        <!-- Le inyectamos la orden al carrito para que cambie la variable a 'pagos' -->
+        <nana_carrito 
+          :items="carrito" 
+          :onIrAPagar="() => pantallaActual = 'pagos'" 
+        />
+      </div>
+
+
+      <!-- VISTA E: MÓDULO DE PAGOS (NUEVA CONDICIÓN) -->
+      <div v-else-if="pantallaActual === 'pagos'">
+        <nana_pagos 
+          :totalPedido="obtenerTotalCarrito()" 
+          :onConfirmarPedido="finalizarPedido" 
+        />
       </div>
 
     </main>

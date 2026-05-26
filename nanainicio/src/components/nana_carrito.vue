@@ -78,7 +78,11 @@
           </div>
 
           <!-- Botón de Continuar a Pagos -->
-          <button :disabled="items.length === 0" class="w-full bg-[#6b4e8b] hover:bg-[#5a3f75] disabled:bg-gray-300 text-white font-bold py-3.5 px-4 rounded-xl shadow-md transition-all active:scale-95 text-sm tracking-wide uppercase mt-4 cursor-pointer">
+          <button 
+            @click="props.onIrAPagar"
+            :disabled="items.length === 0" 
+            class="w-full bg-[#6b4e8b] hover:bg-[#5a3f75] disabled:bg-gray-300 text-white font-bold py-3.5 px-4 rounded-xl shadow-md transition-all active:scale-95 text-sm tracking-wide uppercase mt-4 cursor-pointer"
+            >            
             Continuar al Pago
           </button>
         </div>
@@ -95,7 +99,8 @@ const props = defineProps({
   items: {
     type: Array,
     required: true
-  }
+  },
+  onIrAPagar: Function // <-- NUEVA PROPIEDAD: Recibe la orden de cambiar de pantalla
 });
 
 // Función para mapear las imágenes locales de assets (Mismos enlaces que tu catálogo)
