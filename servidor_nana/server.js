@@ -158,6 +158,36 @@ app.get('/servidor_nana/calificaciones', (req, res) => {
     });
 });
 
+// ==========================================
+// RUTA 8: AGREGAR NUEVO PRODUCTO (CRUD: Inserción)
+// ==========================================
+app.post('/servidor_nana/productos', (req, res) => {
+    const { codigo, nombre, categoria, precio, imagen_url } = req.body;
+    const sql = 'INSERT INTO productos (codigo, nombre, categoria, precio, imagen_url) VALUES (?, ?, ?, ?, ?)';
+    db.query(sql, [codigo, nombre, categoria, precio, imagen_url], (err, result) => {
+        if (err) {
+            console.error('Error al insertar producto:', err.message);
+            return res.status(500).json({ error: err.message });
+        }
+        res.json({ mensaje: '¡Producto registrado exitosamente en el catálogo!' });
+    });
+});
+
+// ==========================================
+// RUTA 9: ELIMINAR PRODUCTO (CRUD: Eliminación)
+// ==========================================
+app.delete('/servidor_nana/productos/:id', (req, res) => {
+    const { id } = req.params;
+    const sql = 'DELETE FROM productos WHERE id = ?';
+    db.query(sql, [id], (err, result) => {
+        if (err) {
+            console.error('Error al eliminar producto:', err.message);
+            return res.status(500).json({ error: err.message });
+        }
+        res.json({ mensaje: 'Producto removido del catálogo correctamente' });
+    });
+});
+
 // ====================================================================
 // CONFIGURACIÓN DE ENCENDIDO (Esto ya lo tienes y se queda abajo)
 // ====================================================================
@@ -168,3 +198,5 @@ app.listen(PUERTO, () => {
     console.log(`Servidor JavaScript corriendo en http://localhost:${PUERTO}/`);
     console.log(`=======================================`);
 });
+
+

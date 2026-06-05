@@ -5,6 +5,8 @@ import nana_carrito from './components/nana_carrito.vue'
 import nana_pagos from './components/nana_pagos.vue'
 import nana_seguimiento from './components/nana_seguimiento.vue'
 import nana_calificaciones from './components/nana_calificaciones.vue'
+import nana_admin from './components/nana_admin.vue'
+
 
 
 import { ref } from 'vue'
@@ -98,6 +100,10 @@ const obtenerTotalCarrito = () => {
 
         <div @click="pantallaActual = 'calificaciones'" class="group relative cursor-pointer font-semibold hover:text-green-800 transition-colors">
           Opiniones <span>∨</span>
+        </div>
+
+        <div @click="pantallaActual = 'admin'" class="group relative cursor-pointer font-bold text-purple-900 hover:text-green-800 transition-colors">
+          ⚙️ Administrador
         </div>
 
       </div>
@@ -217,6 +223,11 @@ const obtenerTotalCarrito = () => {
         <nana_calificaciones />
       </div>
       
+      <!-- VISTA H: PANEL DE ADMINISTRACIÓN (NUEVA CONDICIÓN) -->
+      <div v-else-if="pantallaActual === 'admin'">
+        <nana_admin />
+      </div>
+
     </main>
 
     <!-- 4. FOOTER -->
