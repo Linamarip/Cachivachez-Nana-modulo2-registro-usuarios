@@ -101,21 +101,22 @@ app.get('/servidor_nana/usuarios', (req, res) => {
 });
 
 // ==========================================
-// RUTA 4: ELIMINAR UN USUARIO POR ID (CRUD: Eliminación)
+// RUTA 4: ELIMINAR UN USUARIO POR ID (Corregido para tu nueva BD)
 // ==========================================
 app.delete('/servidor_nana/usuarios/:id', (req, res) => {
     const { id } = req.params;
     
-    // Intenta borrar buscando por 'id' o por 'id_usuario' de manera inteligente
-    const sql = 'DELETE FROM usuarios WHERE id = ? OR id_usuario = ?';
-    db.query(sql, [id, id], (err, result) => {
+    // Dejamos la columna 'id' que es la que existe de verdad en tu phpMyAdmin
+    const sql = 'DELETE FROM usuarios WHERE id = ?';
+    db.query(sql, [id], (err, result) => {
         if (err) {
             console.error('❌ Error al eliminar usuario:', err.message);
             return res.status(500).json({ error: err.message });
         }
-        res.json({ mensaje: 'Usuario eliminado exitosamente' });
+        res.json({ mensaje: 'Usuario eliminado exitosamente de la base de datos' });
     });
 });
+
 
 // ==========================================
 // RUTA 5: OBTENER PRODUCTOS (Catálogo)
