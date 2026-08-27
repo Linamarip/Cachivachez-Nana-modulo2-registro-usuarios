@@ -58,6 +58,7 @@ app.post('/servidor_nana/registro', (req, res) => {
     const direccion = datos.direccion;
     const ciudad = datos.ciudad;
     const departamento = datos.departamento;
+    const contrasenia = datos.contrasenia || datos.contrasena;
 
     const sql = `INSERT INTO usuarios 
     (nombre, apellido, cedula, fecha_nacimiento, email, celular, direccion, ciudad, departamento, contrasenia) 
