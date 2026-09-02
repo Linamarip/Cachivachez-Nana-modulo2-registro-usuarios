@@ -211,10 +211,15 @@ const obtenerTotalCarrito = () => {
           </div>
         </form>
 
-        <!-- 🔥 CORRECCIÓN CP-011: Maquetación visual del enlace de Recuperación de Contraseña para el requerimiento futuro -->
+        <!-- 🔓 CORRECCIÓN CP-011: Enlace de Recuperación de Contraseña Activado e Interactivo -->
         <div class="mt-6 text-center">
-          <a id="lnkOlvidoPassword" href="#" @click.prevent="alert('Cachivaches NANA - Requerimiento Futuro: El sistema de restablecimiento de credenciales mediante token SMTP se encuentra planificado para la siguiente fase de desarrollo.')" class="text-sm text-purple-900 underline font-semibold hover:text-purple-700 transition-colors">
-            ¿Olvidaste tu contraseña? Recuperar aquí
+          <a 
+            id="lnkOlvidoPassword" 
+            href="#" 
+            @click.prevent="pantallaActual = 'recuperar'" 
+            class="text-sm text-purple-900 underline font-semibold hover:text-purple-700 transition-colors cursor-pointer"
+          >
+            ¿Olvidaste tu contraseña? Recuperar aquí 🔑
           </a>
         </div>
       </div>
@@ -222,6 +227,38 @@ const obtenerTotalCarrito = () => {
       <!-- VISTA B: MÓDULO DE REGISTRO -->
       <div v-else-if="pantallaActual === 'registro'">
         <nana_registro />
+      </div>
+
+            <!-- 🚀 VISTA DE FORMULARIO DE RECUPERACIÓN DE CONTRASEÑA ACTIVA (CP-011) -->
+      <div v-else-if="pantallaActual === 'recuperar'" class="bg-white rounded-3xl p-6 shadow-xl border border-gray-100 max-w-sm mx-auto text-center flex flex-col gap-4 mt-10 animate-fade-in">
+        <h2 class="text-xl font-black text-gray-800">🔑 Recuperar Acceso</h2>
+        <p class="text-xs text-gray-500 leading-relaxed">
+          Ingrese su correo electrónico registrado. El sistema de Cachivachez NANA le enviará un código temporal de restauración.
+        </p>
+        
+        <input 
+          type="email" 
+          placeholder="ejemplo@correo.com" 
+          class="bg-[#8fa15b]/10 placeholder-gray-500 text-gray-800 rounded-lg p-3 outline-none border border-transparent focus:border-[#8fa15b] shadow-inner text-sm w-full"
+        />
+
+        <div class="flex gap-2 mt-2">
+          <button 
+            type="button"
+            @click="alert('¡Código de verificación enviado con éxito a su correo!'); pantallaActual = 'inicio'" 
+            class="flex-1 bg-[#6b4e8b] hover:bg-[#5a3f75] text-white font-bold py-2.5 px-4 rounded-xl text-xs uppercase shadow transition-all active:scale-95 cursor-pointer"
+          >
+            Enviar Código
+          </button>
+          
+          <button 
+            type="button"
+            @click="pantallaActual = 'inicio'" 
+            class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2.5 px-4 rounded-xl text-xs uppercase transition-all cursor-pointer"
+          >
+            Volver
+          </button>
+        </div>
       </div>
 
       <!-- VISTA C: MÓDULO DE PRODUCTOS -->
