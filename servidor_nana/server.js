@@ -27,7 +27,7 @@ db.connect((err) => {
 });
 
 // ==========================================
-// RUTA 1: LOGIN (Inicio de Sesión)
+// RUTA 1: LOGIN (Inicio de Sesión Real y Dinámico)
 // ==========================================
 app.post('/servidor_nana/login', (req, res) => {
     const { emailUsuario, contraseniaUsuario } = req.body;
@@ -35,12 +35,24 @@ app.post('/servidor_nana/login', (req, res) => {
     db.query(sql, [emailUsuario, contraseniaUsuario], (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
         if (results.length > 0) {
-            res.json({ mensaje: 'Login exitoso', idUsuario: results[0].id || results[0].id_usuario });
+            // 🚀 ENVIAMOS EL USUARIO COMPLETO CON SU DIRECCIÓN REAL DE PHP_MY_ADMIN
+            res.json({ 
+                mensaje: 'Login exitoso', 
+                usuario: {
+                    id: results[0].id || results[0].id_usuario,
+                    nombre: results[0].nombre,
+                    apellido: results[0].apellido,
+                    direccion: results[0].direccion,
+                    ciudad: results[0].ciudad,
+                    departamento: results[0].departamento
+                }
+            });
         } else {
             res.status(401).json({ mensaje: 'Credenciales incorrectas' });
         }
     });
 });
+iangel 
 
 // ==========================================
 // RUTA 2: REGISTRO DE USUARIOS (CRUD: Inserción)
@@ -58,14 +70,20 @@ app.post('/servidor_nana/registro', (req, res) => {
     const direccion = datos.direccion;
     const ciudad = datos.ciudad;
     const departamento = datos.departamento;
-    const contrasenia = datos.contrasenia || datos.contrasena;
 
+    // 🔥 REPARACIÓN CRÍTICA DE SEGURIDAD (Paso 1 y 2 Unificados)
+    // Buscamos todas las combinaciones posibles que envíe el formulario frontend.
+    // Solo si el usuario deja el campo 100% vacío en la pantalla se aplicará el salvavidas.
+    const claveFinal = datos.contraseniaUsuario || datos.contrasenia || datos.contrasena || datos.password || '';
+
+    // 3. TERCERO SE DEFINE LA CONSULTA SQL
     const sql = `INSERT INTO usuarios 
     (nombre, apellido, cedula, fecha_nacimiento, email, celular, direccion, ciudad, departamento, contrasenia) 
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
-    const valores = [nombre, apellido, cedula, fechaNacimiento, email, celular, direccion, ciudad, departamento, '123456'];
-
+    // 4. CUARTO SE PASAN LOS VALORES A LA MATRIZ
+    const valores = [nombre, apellido, cedula, fechaNacimiento, email, celular, direccion, ciudad, departamento, claveFinal];
+   
     db.query(sql, valores, (err, result) => {
         if (err) {
             console.log("❌ ERROR REAL DE MYSQL EN REGISTRO:", err.message);

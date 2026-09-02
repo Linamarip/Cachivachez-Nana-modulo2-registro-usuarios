@@ -46,15 +46,52 @@
       <!-- COLUMNA DERECHA: DIRECCIÓN Y RESUMEN DE TOTALES -->
       <div class="flex flex-col gap-6">
         
-        <!-- Cuadro de Dirección de Envío (De tu dibujo) -->
+                <!-- 🔥 CORRECCIÓN CP-004 y CP-008: Cuadro de Dirección Dinámico con Botón de Retorno -->
         <div class="bg-white rounded-3xl p-5 shadow-xl border border-gray-100">
           <h3 class="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">📍 Dirección de Envío</h3>
-          <div class="bg-[#8fa15b]/20 p-3 rounded-xl border border-[#8fa15b]/30">
-            <p class="font-bold text-gray-800">Lina María Rincón</p>
-            <p class="text-sm text-gray-600 mt-1">Calle 45 #12-34, Apt 402</p>
-            <p class="text-sm text-gray-600">Bello - Antioquia</p>
+          
+          <!-- Selector Interactivo de Opciones (Radio Buttons) -->
+          <div class="flex flex-col gap-2 text-sm mb-4 border-b border-gray-100 pb-3">
+            <label class="flex items-center gap-2 cursor-pointer font-semibold text-gray-700">
+              <input type="radio" v-model="tipoDireccion" value="registrada" class="accent-[#8fa15b]">
+              <span>Usar dirección registrada en mi cuenta</span>
+            </label>
+            
+            <label class="flex items-center gap-2 cursor-pointer font-semibold text-gray-700">
+              <input type="radio" v-model="tipoDireccion" value="alternativa" class="accent-[#8fa15b]">
+              <span>Enviar a una ubicación diferente</span>
+            </label>
           </div>
+
+          <!-- CONDICIÓN A: Muestra los datos 100% reales extraídos de tu base de datos -->
+          <div v-if="tipoDireccion === 'registrada'" class="bg-[#8fa15b]/20 p-3 rounded-xl border border-[#8fa15b]/30 mb-4">
+            <p class="font-bold text-gray-800">👤 Destinatario: {{ correoActivo }}</p>
+            <p class="text-sm text-gray-600 mt-1">🏠 Dirección Base: {{ direccionBase }}</p>
+            <!-- 🚀 Pinta dinámicamente la ciudad y departamento del usuario activo -->
+            <p class="text-sm text-gray-600">📍 {{ ciudadBase }} - {{ deptoBase }}</p>
+          </div>
+
+          <!-- CONDICIÓN B: Abre una caja de texto limpia para ingresar un domicilio nuevo -->
+          <div v-else class="bg-purple-50 p-3 rounded-xl border border-purple-200 flex flex-col gap-2 mb-4">
+            <p class="text-xs text-purple-900 font-bold">✏ Mini-formulario: Digite la nueva dirección:</p>
+            <input 
+              type="text" 
+              v-model="direccionNueva" 
+              placeholder="Ej: Avenida Siempre Viva 742" 
+              class="border border-purple-300 p-2 rounded-lg text-sm w-full outline-purple-700 bg-white"
+            >
+          </div>
+
+          <!-- 🔥 CORRECCIÓN CP-008: Botón físico de regreso para no quedarse atrapado en el carrito -->
+          <button 
+            type="button"
+            @click="emit('regresarAlCatalogo')" 
+            class="w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-xl shadow transition-all text-sm mt-2 active:scale-95 cursor-pointer"
+          >
+            ⬅️ Seguir Comprando / Regresar al Catálogo
+          </button>
         </div>
+
 
         <!-- Cuadro de Resumen de Totales (Cálculos automáticos) -->
         <div class="bg-white rounded-3xl p-6 shadow-xl border border-gray-100 flex flex-col justify-between">
@@ -78,13 +115,11 @@
           </div>
 
           <!-- Botón de Continuar a Pagos -->
-          <button 
-            @click="props.onIrAPagar"
-            :disabled="items.length === 0" 
-            class="w-full bg-[#6b4e8b] hover:bg-[#5a3f75] disabled:bg-gray-300 text-white font-bold py-3.5 px-4 rounded-xl shadow-md transition-all active:scale-95 text-sm tracking-wide uppercase mt-4 cursor-pointer"
-            >            
+           <!-- 🚀 BOTÓN CORREGIDO: Ahora procesa la dirección de forma dinámica antes de saltar a pagos -->
+          <button @click="procesarDespachoYAvance" :disabled="items.length === 0" class="...">
             Continuar al Pago
           </button>
+
         </div>
       </div>
 
@@ -93,15 +128,39 @@
 </template>
 
 <script setup>
+import { ref } from 'vue'
 
-// Recibe la lista de productos agregados desde App.vue
 const props = defineProps({
-  items: {
-    type: Array,
-    required: true
-  },
-  onIrAPagar: Function // <-- NUEVA PROPIEDAD: Recibe la orden de cambiar de pantalla
-});
+  items: Array,
+  onIrAPagar: Function
+})
+
+// 🚀 NUEVA LÍNEA: Declaramos el emisor de eventos para comunicarnos de forma segura con App.vue
+const emit = defineEmits(['regresarAlCatalogo'])
+
+// Variables interactivas de opción
+const tipoDireccion = ref('registrada') 
+const direccionNueva = ref('')
+
+// 🌟 EXTRACCIÓN 100% REAL DE LA BASE DE DATOS MÓVIL
+const correoActivo = localStorage.getItem('usuarioNombre') || 'Cliente Activo'
+const direccionBase = localStorage.getItem('usuarioDireccion') || 'No Registrada'
+const ciudadBase = localStorage.getItem('usuarioCiudad') || ''
+const deptoBase = localStorage.getItem('usuarioDepartamento') || ''
+
+// Función para enviar la dirección seleccionada o la modificada a la pantalla de pago
+const procesarDespachoYAvance = () => {
+  // Si elige 'registrada' toma la de MySQL, si elige 'alternativa' toma lo que escribió en la caja limpia
+  const direccionFinal = tipoDireccion.value === 'registrada' 
+    ? `${direccionBase}, ${ciudadBase} - ${deptoBase}` 
+    : direccionNueva.value;
+  
+  localStorage.setItem('direccionPedidoActual', direccionFinal || 'Dirección de Envío');
+  
+  if (props.onIrAPagar) {
+    props.onIrAPagar();
+  }
+}
 
 // Función para mapear las imágenes locales de assets (Mismos enlaces que tu catálogo)
 // Reemplaza tu función obtenerRutaImagen vieja por esta versión exacta:

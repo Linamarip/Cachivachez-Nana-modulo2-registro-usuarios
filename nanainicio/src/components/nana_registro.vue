@@ -73,6 +73,18 @@
           />
         </div>
 
+                <!-- 🔥 INTERFAZ DE SEGURIDAD INTERACTIVA -->
+        <div class="flex flex-col gap-2">
+          <label class="font-semibold text-gray-700">Cree una Contraseña de Acceso</label>
+          <input 
+            v-model="contraseniaUsuario"
+            type="password" 
+            placeholder="Mínimo 6 caracteres (letras y números)" 
+            required
+            class="bg-[#8fa15b] placeholder-gray-200 text-white rounded-lg p-3 outline-none border border-transparent focus:border-white shadow-inner text-sm" 
+          />
+        </div>
+
         <div class="flex flex-col gap-1">
           <label class="font-semibold text-gray-700">Celular</label>
           <input 
@@ -175,6 +187,9 @@ const formulario = ref({
 const mensajeExito = ref('');
 const mensajeError = ref('');
 const listaUsuarios = ref([]);
+// 🔥 REPARACIÓN CRÍTICA: Variable reactiva para capturar la clave en el registro
+const contraseniaUsuario = ref('')
+
 
 // Obtener usuarios de MySQL (Consulta CRUD)
 const obtenerUsuarios = async () => {
@@ -215,14 +230,19 @@ const manejarRegistro = async () => {
     return;
   }
 
-  try {
+   try {
+    // 🚀 PUNTO 4: Inyectamos la clave real digitada dentro del objeto del formulario
+    formulario.value.contraseniaUsuario = contraseniaUsuario.value;
+
     const respuesta = await fetch('http://localhost:8080/servidor_nana/registro', {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(formulario.value)
+      body: JSON.stringify(formulario.value) // 🔥 Ahora viaja empaquetada con la clave real
     });
+
+    // ... el resto de tu código del if (respuesta.ok) se mantiene igual abajo
 
     if (respuesta.ok) {
       mensajeExito.value = "Se envió a su email la confirmación";

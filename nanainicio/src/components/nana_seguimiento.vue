@@ -2,7 +2,7 @@
   <div class="w-full bg-[#c8d695] px-4 min-h-screen pb-12 text-left">
     <!-- Encabezado de Identificación del Usuario -->
     <div class="max-w-6xl mx-auto mb-6 text-sm font-semibold text-gray-700">
-      Usuario: Lina María Rincón
+      👤 Usuario Activo: {{ correoActivo }}
     </div>
 
     <!-- Contenedor Principal (Dos Columnas del Prototipo) -->
@@ -58,20 +58,28 @@
       </div>
 
       <!-- COLUMNA DERECHA: DIRECCIÓN DE ENVÍO -->
-      <div class="flex flex-col gap-4">
-        <h4 class="text-lg font-bold text-gray-800">Dirección de envío</h4>
-        
-        <div class="bg-white rounded-2xl p-5 shadow-md border border-gray-100 flex flex-col gap-1 text-sm text-gray-700 font-medium">
-          <p class="font-extrabold text-gray-900 text-base mb-1">Calle 153 #23-41</p>
-          <p>Pereira</p>
-          <p class="font-bold text-[#6b4e8b]">Risaralda</p>
+      <div class="flex flex-col gap-4 text-left">
+        <h3 class="text-sm font-bold text-gray-700">Dirección de envío</h3>
+        <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex flex-col gap-1">
+          <!-- 🚀 Muestra la calle/avenida que seleccionó o modificó en el carrito -->
+          <p class="font-bold text-gray-800">{{ direccionRealPedido }}</p>
+          
+          <!-- 🚀 Pinta milimétricamente la ciudad y departamento reales del usuario actual de MySQL -->
+          <p v-if="ciudadReal || deptoReal" class="text-sm text-gray-600 font-semibold">
+            📍 {{ ciudadReal }} - {{ deptoReal }}
+          </p>
         </div>
       </div>
-
     </div>
   </div>
 </template>
 
 <script setup>
 // Módulo visual estático fiel al prototipo solicitado
+
+// 🚀 REPARACIÓN COMPLEMENTARIA: Extrae el correo real de la memoria activa
+const correoActivo = localStorage.getItem('usuarioEmail') || 'Cliente Activo'
+const direccionRealPedido = localStorage.getItem('direccionPedidoActual') || 'No Registrada'
+const ciudadReal = localStorage.getItem('usuarioCiudad') || ''
+const deptoReal = localStorage.getItem('usuarioDepartamento') || ''
 </script>

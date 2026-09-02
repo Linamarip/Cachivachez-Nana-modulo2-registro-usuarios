@@ -73,7 +73,7 @@
         </div>
       </div>
 
-      <!-- COLUMNA DERECHA: ENVÍO Y CONFIRMACIÓN -->
+      <!-- COLUMNA DERECHA: ENVÍO Y CONFIRMACIÓN CORREGIDA (CP-004) -->
       <div class="flex flex-col gap-6 text-left">
         <div class="bg-white rounded-3xl p-5 shadow-xl border border-gray-100">
           <div class="flex justify-between items-center mb-3">
@@ -83,17 +83,20 @@
             </button>
           </div>
 
+          <!-- MUESTRA LA INFORMACIÓN REAL EXTENSA DE LA MEMORIA ACTIVA -->
           <div v-if="!editandoDireccion" class="bg-[#8fa15b]/20 p-4 rounded-xl border border-[#8fa15b]/30">
-            <p class="font-bold text-gray-800">{{ direccionEnvio.destinatario }}</p>
-            <p class="text-sm text-gray-600 mt-1">{{ direccionEnvio.nomenclatura }}</p>
-            <p class="text-sm text-gray-600 font-semibold">{{ direccionEnvio.ciudad }} - {{ direccionEnvio.departamento }}</p>
+            <p class="font-bold text-gray-800">👤 Destinatario: {{ correoActivo }}</p>
+            <p class="text-sm text-gray-600 mt-1">🏠 Dirección: {{ direccionRealPedido }}</p>
+            <p class="text-sm text-gray-600 font-semibold">📍 Ubicación: {{ ciudadBase }} - {{ deptoBase }}</p>
           </div>
 
+          <!-- FORMULARIO DE EDICIÓN EN CALIENTE CONECTADO A LAS VARIABLES REALES -->
           <div v-else class="flex flex-col gap-2 bg-gray-50 p-3 rounded-xl border border-gray-200">
-            <input v-model="direccionEnvio.destinatario" type="text" placeholder="Nombre completo" class="p-2 border rounded-lg text-xs w-full bg-white outline-none" />
-            <input v-model="direccionEnvio.nomenclatura" type="text" placeholder="Dirección y bloque" class="p-2 border rounded-lg text-xs w-full bg-white outline-none" />
-            <input v-model="direccionEnvio.ciudad" type="text" placeholder="Ciudad" class="p-2 border rounded-lg text-xs w-full bg-white outline-none" />
-            <input v-model="direccionEnvio.departamento" type="text" placeholder="Departamento" class="p-2 border rounded-lg text-xs w-full bg-white outline-none" />
+            <p class="text-xs text-purple-900 font-bold mb-1">✏️ Modificar datos de entrega:</p>
+            <input v-model="correoActivo" type="text" placeholder="Nombre completo" class="p-2 border rounded-lg text-xs w-full bg-white outline-none" />
+            <input v-model="direccionRealPedido" type="text" placeholder="Dirección y bloque" class="p-2 border rounded-lg text-xs w-full bg-white outline-none" />
+            <input v-model="ciudadBase" type="text" placeholder="Ciudad" class="p-2 border rounded-lg text-xs w-full bg-white outline-none" />
+            <input v-model="deptoBase" type="text" placeholder="Departamento" class="p-2 border rounded-lg text-xs w-full bg-white outline-none" />
             <button type="button" @click="editandoDireccion = false" class="bg-[#8fa15b] text-white text-xs font-bold py-1.5 rounded-lg mt-1 hover:bg-[#7a8c4e]">Guardar Dirección 💾</button>
           </div>
         </div>
@@ -110,7 +113,7 @@
             type="button"
             @click="manejarConfirmacionBoton"
             :disabled="!metodoSeleccionado || editandoDireccion" 
-            class="w-full bg-[#6b4e8b] hover:bg-[#5a3f75] disabled:bg-gray-300 text-white font-bold py-4 px-4 rounded-xl shadow-md transition-all active:scale-95 text-sm tracking-wide uppercase cursor-pointer"
+            class="w-full bg-[#6b4e8b] hover:bg-[#5a3f75] disabled:bg-gray-300 text-white font-bold py-4 px-4 rounded-xl shadow-md transition-all active:scale-95 text-sm tracking-wide uppercase mt-4 cursor-pointer"
           >
             Confirmar Pedido
           </button>
@@ -166,38 +169,36 @@
 </template> <!-- <-- AQUÍ SE CIERRA EL TEMPLATE QUE FALTABA -->
 
 <script setup>
-import { ref, defineProps } from 'vue';
+import { ref } from 'vue'
 
+// Recibimos las propiedades nativas de facturación que envía tu App.vue
 const props = defineProps({
-  totalPedido: {
-    type: Number,
-    default: 105000 
-  },
+  totalPedido: Number,
   onConfirmarPedido: Function
-});
+})
 
-const metodoSeleccionado = ref('');
-const editandoDireccion = ref(false);
+// 🚀 CONFIRMACIÓN EJECUTIVA: Extrae el correo real y la dirección exacta procesada desde el carrito
+const correoActivo = localStorage.getItem('usuarioEmail') || 'Cliente Activo'
+const direccionRealPedido = localStorage.getItem('direccionPedidoActual') || 'No Registrada'
 
-const mostrarModalTransferencia = ref(false); 
-const vistaPreviaImagen = ref(null);         
+// Variables reactivas de control de la pasarela
+const metodoSeleccionado = ref('')
+const editandoDireccion = ref(false)
+const mostrarModalTransferencia = ref(false) 
+const vistaPreviaImagen = ref(null)         
 
-const direccionEnvio = ref({
-  destinatario: 'Lina María Rincón',
-  nomenclatura: 'Avenida Sur #23-45, Bloque 3',
-  ciudad: 'Pereira',
-  departamento: 'Risaralda'
-});
-
+// 🚀 FUNCIÓN DE CONFIRMACIÓN ADAPTADA CON TUS DATOS DINÁMICOS (CP-004)
 const manejarConfirmacionBoton = () => {
   if (metodoSeleccionado.value === 'Transferencia') {
     mostrarModalTransferencia.value = true;
   } else {
-    alert(`¡Pedido confirmado por Pago Contraentrega!\nEnvío listo hacia ${direccionEnvio.value.ciudad}.`);
+    // Reemplazamos el viejo punto fijo por un aviso dinámico limpio conectado a tu memoria
+    alert(`¡Pedido confirmado por Pago Contraentrega!\nEnvío listo hacia la dirección registrada.`);
     if (props.onConfirmarPedido) props.onConfirmarPedido('Contraentrega');
   }
 };
 
+// 📸 FUNCIONES LÚDICAS PARA EL COMPROBANTE DE BANCOLOMBIA / NEQUI (Tus funciones originales salvadas)
 const manejarCargaImagen = (evento) => {
   const archivos = evento.target.files;
   if (archivos && archivos.length > 0) {

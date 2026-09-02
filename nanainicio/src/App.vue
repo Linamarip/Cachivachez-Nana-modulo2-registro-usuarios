@@ -1,4 +1,7 @@
 <script setup>
+import { ref } from 'vue'
+
+// 🚀 UNIFICACIÓN DE COMPONENTES: Deben empezar por nana_ para que el HTML los reconozca
 import nana_registro from './components/nana_registro.vue'
 import nana_productos from './components/nana_productos.vue' 
 import nana_carrito from './components/nana_carrito.vue'
@@ -7,32 +10,28 @@ import nana_seguimiento from './components/nana_seguimiento.vue'
 import nana_calificaciones from './components/nana_calificaciones.vue'
 import nana_admin from './components/nana_admin.vue'
 
-
-
-import { ref } from 'vue'
-
-// Variables reactivas para capturar los datos del formulario
+// Variables reactivas para capturar los datos del formulario de acceso
 const pantallaActual = ref('inicio')
 const email = ref('')
 const contrasenia = ref('')
 const mensajeError = ref('')
+const correoUsuarioActivo = ref('')
 
-// Arreglo global para almacenar los productos seleccionados
+// 🚀 REGRESO SEGURO: La variable vuelve a llamarse 'carrito' para sanar la línea 150
 const carrito = ref([])
 
-// Función para agregar un producto al carrito o aumentar su cantidad
+// Función para agregar un producto al catálogo Oakley o aumentar su cantidad
 const agregarAlCarrito = (producto) => {
   const existe = carrito.value.find(item => item.id === producto.id)
   if (existe) {
     existe.cantidad++
   } else {
-    // Agregamos el producto con cantidad inicial de 1
     carrito.value.push({ ...producto, cantidad: 1 })
   }
   alert(`¡${producto.nombre} agregado al carrito!`)
 }
 
-// Función para enviar los datos al servidor JavaScript
+// 🚀 FUNCIÓN DE INICIO DE SESIÓN INTEGRADA, ASÍNCRONA Y BLINDADA AL 100%
 const manejarInicioSesion = async () => {
   mensajeError.value = ''
 
@@ -53,10 +52,25 @@ const manejarInicioSesion = async () => {
       })
     })
 
-    if (respuesta.ok) {
-      alert('¡Bienvenido a Cachivachez NANA!')
-      pantallaActual.value = 'productos' 
-    } else {
+        if (respuesta.ok) {
+      // 🚀 Convertimos la respuesta del backend en un objeto legible
+      const datosServidor = await respuesta.json();
+      const userReal = datosServidor.usuario;
+
+      alert(`¡Bienvenido a Cachivachez NANA, ${userReal.nombre}!`);
+      
+      correoUsuarioActivo.value = email.value;
+
+      // 🌟 Guardamos en el LocalStorage ÚNICAMENTE la información real de la base de datos
+      localStorage.setItem('usuarioEmail', email.value);
+      localStorage.setItem('usuarioNombre', `${userReal.nombre} ${userReal.apellido}`);
+      localStorage.setItem('usuarioDireccion', userReal.direccion || 'Sin Dirección');
+      localStorage.setItem('usuarioCiudad', userReal.ciudad || '');
+      localStorage.setItem('usuarioDepartamento', userReal.departamento || '');
+
+      pantallaActual.value = 'productos';
+    }
+     else {
       mensajeError.value = 'Credenciales inválidas. El usuario debe realizar el Registro.'
     }
   } catch (error) {
@@ -64,19 +78,18 @@ const manejarInicioSesion = async () => {
   }
 }
 
+// Vaciado absoluto del acumulador aritmético al finalizar pedido (CP-010)
 const finalizarPedido = (metodoPago) => {
   alert(`Cachivaches NANA: Su pedido ha sido registrado con método: ${metodoPago}.`);
-  carrito.value = []; // Limpiamos el carrito
-  pantallaActual.value = 'seguimiento'; // <-- CAMBIA ESTA LÍNEA (Ahora va a seguimiento)
+  carrito.value = []; // Resetea el carrito a cero de forma limpia
+  pantallaActual.value = 'seguimiento'; 
 }
-
 
 const obtenerTotalCarrito = () => {
   if (carrito.value.length === 0) return 0;
   const subtotal = carrito.value.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
-  return subtotal + 15000; // Suma los $15.000 de envío de tus prototipos
+  return subtotal + 15000; 
 }
-
 </script>
 
 <template>
@@ -107,7 +120,12 @@ const obtenerTotalCarrito = () => {
         </div>
 
       </div>
-      
+
+        <!-- 👥 IDENTIFICACIÓN VISUAL REPARADA (Usa la variable reactiva limpia de Vue) -->
+        <div v-if="pantallaActual !== 'inicio' && correoUsuarioActivo" class="bg-purple-100 text-purple-900 font-bold px-3 py-1 rounded-full text-xs shadow-sm flex items-center gap-1 border border-purple-200">
+          👤 Cliente: {{ correoUsuarioActivo }}
+        </div>
+        
       <!-- Buscador y Botón del Carrito 🛒 -->
       <div class="flex items-center gap-6">
         <div class="relative">
@@ -123,6 +141,7 @@ const obtenerTotalCarrito = () => {
             {{ carrito.reduce((sum, item) => sum + item.cantidad, 0) }}
           </span>
         </button>
+
       </div>
     </nav>
 
@@ -140,7 +159,7 @@ const obtenerTotalCarrito = () => {
       </p>
     </header>
 
-    <!-- 3. CONTENIDO DINÁMICO -->
+<!-- 3. CONTENIDO DINÁMICO -->
     <main class="max-w-4xl mx-auto px-6 py-8">
       
       <!-- VISTA A: INICIO DE SESIÓN -->
@@ -151,13 +170,15 @@ const obtenerTotalCarrito = () => {
           {{ mensajeError }}
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+        <!-- 🔥 CORRECCIÓN CP-006: Envolvemos los campos en un formulario estructural para activar el control nativo del navegador -->
+        <form @submit.prevent="manejarInicioSesion" class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
           <div class="flex flex-col gap-2">
             <label class="font-semibold">Iniciar sesión con su email</label>
             <input 
               v-model="email"
               type="email" 
               placeholder="email@email.com" 
+              required
               class="bg-[#8fa15b] placeholder-gray-200 text-white rounded-lg p-3 outline-none border border-transparent focus:border-white shadow-inner" 
             />
           </div>
@@ -168,14 +189,16 @@ const obtenerTotalCarrito = () => {
               v-model="contrasenia"
               type="password" 
               placeholder="contraseña alfanumérica" 
+              required
               class="bg-[#8fa15b] placeholder-gray-200 text-white rounded-lg p-3 outline-none border border-transparent focus:border-white shadow-inner" 
             />
           </div>
 
           <div class="flex flex-col gap-2">
+            <!-- Cambiamos a type="submit" para que gatille la verificación obligatoria -->
             <button 
-              @click="manejarInicioSesion"
-              class="bg-[#6b4e8b] hover:bg-[#5a3f75] text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-all active:scale-95"
+              type="submit"
+              class="bg-[#6b4e8b] hover:bg-[#5a3f75] text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-all active:scale-95 w-full"
             >
               Inicio de sesión
             </button>
@@ -186,6 +209,13 @@ const obtenerTotalCarrito = () => {
               </span>
             </p>
           </div>
+        </form>
+
+        <!-- 🔥 CORRECCIÓN CP-011: Maquetación visual del enlace de Recuperación de Contraseña para el requerimiento futuro -->
+        <div class="mt-6 text-center">
+          <a id="lnkOlvidoPassword" href="#" @click.prevent="alert('Cachivaches NANA - Requerimiento Futuro: El sistema de restablecimiento de credenciales mediante token SMTP se encuentra planificado para la siguiente fase de desarrollo.')" class="text-sm text-purple-900 underline font-semibold hover:text-purple-700 transition-colors">
+            ¿Olvidaste tu contraseña? Recuperar aquí
+          </a>
         </div>
       </div>
 
@@ -199,31 +229,32 @@ const obtenerTotalCarrito = () => {
         <nana_productos :onAgregar="agregarAlCarrito" />
       </div>
 
-      <!-- VISTA D: MÓDULO DE CARRITO DE COMPRAS -->
+      <!-- VISTA D: MÓDULO DE CARRITO DE COMPRAS CORREGIDO -->
       <div v-else-if="pantallaActual === 'carrito'">
-        <!-- Le inyectamos la orden al carrito para que cambie la variable a 'pagos' -->
         <nana_carrito 
           :items="carrito" 
           :onIrAPagar="() => pantallaActual = 'pagos'" 
+          @regresarAlCatalogo="pantallaActual = 'productos'" 
         />
       </div>
 
-            <!-- VISTA E: MÓDULO DE PAGOS -->
+
+      <!-- VISTA E: MÓDULO DE PAGOS -->
       <div v-else-if="pantallaActual === 'pagos'">
         <nana_pagos :totalPedido="obtenerTotalCarrito()" :onConfirmarPedido="finalizarPedido" />
       </div>
 
-      <!-- VISTA F: MÓDULO DE SEGUIMIENTO (NUEVA CONDICIÓN) -->
+      <!-- VISTA F: MÓDULO DE SEGUIMIENTO -->
       <div v-else-if="pantallaActual === 'seguimiento'">
         <nana_seguimiento />
       </div>
 
-      <!-- VISTA G: MÓDULO DE CALIFICACIONES (AQUÍ PONES LA NUEVA CONDICIÓN) -->
+      <!-- VISTA G: MÓDULO DE CALIFICACIONES -->
       <div v-else-if="pantallaActual === 'calificaciones'">
         <nana_calificaciones />
       </div>
       
-      <!-- VISTA H: PANEL DE ADMINISTRACIÓN (NUEVA CONDICIÓN) -->
+      <!-- VISTA H: PANEL DE ADMINISTRACIÓN -->
       <div v-else-if="pantallaActual === 'admin'">
         <nana_admin />
       </div>
