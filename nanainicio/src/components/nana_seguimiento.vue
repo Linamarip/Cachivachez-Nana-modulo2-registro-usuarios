@@ -75,11 +75,11 @@
 </template>
 
 <script setup>
-// Módulo visual estático fiel al prototipo solicitado
+import { computed } from 'vue';
 
-// 🚀 REPARACIÓN COMPLEMENTARIA: Extrae el correo real de la memoria activa
-const correoActivo = localStorage.getItem('usuarioEmail') || 'Cliente Activo'
-const direccionRealPedido = localStorage.getItem('direccionPedidoActual') || 'No Registrada'
-const ciudadReal = localStorage.getItem('usuarioCiudad') || ''
-const deptoReal = localStorage.getItem('usuarioDepartamento') || ''
+// Extracción reactiva de los datos del pedido y del cliente
+const correoActivo = computed(() => localStorage.getItem('usuarioEmail') || 'Cliente Activo');
+const direccionRealPedido = computed(() => localStorage.getItem('direccionPedidoActual') || 'No Registrada');
+const ciudadReal = computed(() => localStorage.getItem('usuarioCiudad') || '');
+const deptoReal = computed(() => localStorage.getItem('usuarioDepartamento') || '');
 </script>

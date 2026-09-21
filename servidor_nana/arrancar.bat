@@ -1,12 +1,11 @@
 @echo off
 echo =======================================
-echo Iniciando Servidor Cachivachez NANA...
+echo Iniciando Servidor Backend Cachivachez NANA...
+echo Puerto: http://localhost:8080/
 echo =======================================
 
 cd /d "%~dp0"
 
-:: Forzamos a Java a leer absolutamente todas las librerías .jar de la carpeta lib de forma automática
-java -cp "bin;lib\*" com.nana.App
+:: Ejecutar servidor Node.js que maneja todos los endpoints y conexión con MySQL
+node server.js
 pause
-
-

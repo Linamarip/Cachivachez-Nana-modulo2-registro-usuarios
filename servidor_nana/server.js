@@ -9,21 +9,28 @@ app.use(cors());
 app.use(express.json()); 
 app.use(express.urlencoded({ extended: true })); 
 
-// Conexión a tu base de datos de XAMPP
-const db = mysql.createConnection({
+// Conexión mediante Pool a la base de datos de XAMPP (Auto-reconexión y estabilidad)
+const db = mysql.createPool({
     host: 'localhost',
     user: 'root',
     password: '', 
     database: 'cachivachez_nana_db',
-    port: 3306
+    port: 3306,
+    waitForConnections: true,
+    connectionLimit: 15,
+    queueLimit: 0
 });
 
-db.connect((err) => {
+// Verificación inicial de conexión con el Pool
+db.getConnection((err, conn) => {
     if (err) {
-        console.error('❌ Error conectando a MySQL:', err);
+        console.error('❌ Error conectando a MySQL de XAMPP:', err.message);
         return;
     }
-    console.log('¡Conexión exitosa a MySQL de XAMPP desde JavaScript!');
+    console.log('=======================================');
+    console.log('¡Conexión exitosa a MySQL (cachivachez_nana_db) con Pool!');
+    console.log('=======================================');
+    conn.release();
 });
 
 // ==========================================
@@ -33,9 +40,11 @@ app.post('/servidor_nana/login', (req, res) => {
     const { emailUsuario, contraseniaUsuario } = req.body;
     const sql = 'SELECT * FROM usuarios WHERE email = ? AND contrasenia = ?';
     db.query(sql, [emailUsuario, contraseniaUsuario], (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
+        if (err) {
+            console.error('❌ Error en login:', err.message);
+            return res.status(500).json({ error: err.message });
+        }
         if (results.length > 0) {
-            // 🚀 ENVIAMOS EL USUARIO COMPLETO CON SU DIRECCIÓN REAL DE PHP_MY_ADMIN
             res.json({ 
                 mensaje: 'Login exitoso', 
                 usuario: {
@@ -51,8 +60,7 @@ app.post('/servidor_nana/login', (req, res) => {
             res.status(401).json({ mensaje: 'Credenciales incorrectas' });
         }
     });
-});
-iangel 
+}); 
 
 // ==========================================
 // RUTA 2: REGISTRO DE USUARIOS (CRUD: Inserción)
@@ -60,36 +68,38 @@ iangel
 app.post('/servidor_nana/registro', (req, res) => {
     const datos = req.body;
     
-    // Captura flexible por si Vue envía las variables con variaciones de nombre
-    const nombre = datos.nombre;
-    const apellido = datos.apellido;
-    const cedula = datos.cedula;
-    const fechaNacimiento = datos.fechaNacimiento || datos.fecha_nacimiento;
-    const email = datos.email || datos.emailUsuario;
-    const celular = datos.celular;
-    const direccion = datos.direccion;
-    const ciudad = datos.ciudad;
-    const departamento = datos.departamento;
-
-    // 🔥 REPARACIÓN CRÍTICA DE SEGURIDAD (Paso 1 y 2 Unificados)
-    // Buscamos todas las combinaciones posibles que envíe el formulario frontend.
-    // Solo si el usuario deja el campo 100% vacío en la pantalla se aplicará el salvavidas.
+    const nombre = (datos.nombre || '').trim();
+    const apellido = (datos.apellido || '').trim();
+    const cedula = (datos.cedula || '').trim();
+    const fechaNacimiento = datos.fechaNacimiento || datos.fecha_nacimiento || null;
+    const email = (datos.email || datos.emailUsuario || '').trim();
+    const celular = (datos.celular || '').trim();
+    const direccion = (datos.direccion || '').trim();
+    const ciudad = (datos.ciudad || '').trim();
+    const departamento = (datos.departamento || '').trim();
     const claveFinal = datos.contraseniaUsuario || datos.contrasenia || datos.contrasena || datos.password || '';
 
-    // 3. TERCERO SE DEFINE LA CONSULTA SQL
+    if (!nombre || !email || !claveFinal) {
+        return res.status(400).json({ error: 'Nombre, email y contraseña son obligatorios.' });
+    }
+
     const sql = `INSERT INTO usuarios 
     (nombre, apellido, cedula, fecha_nacimiento, email, celular, direccion, ciudad, departamento, contrasenia) 
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
-    // 4. CUARTO SE PASAN LOS VALORES A LA MATRIZ
     const valores = [nombre, apellido, cedula, fechaNacimiento, email, celular, direccion, ciudad, departamento, claveFinal];
    
     db.query(sql, valores, (err, result) => {
         if (err) {
-            console.log("❌ ERROR REAL DE MYSQL EN REGISTRO:", err.message);
+            console.error("❌ ERROR DE MYSQL EN REGISTRO:", err.message);
+            if (err.code === 'ER_DUP_ENTRY') {
+                return res.status(409).json({ 
+                    error: 'El correo electrónico o la cédula ya se encuentra registrado en el sistema.' 
+                });
+            }
             return res.status(500).json({ error: err.message });
         }
-        res.json({ mensaje: 'Se envió a su email la confirmación' });
+        res.json({ mensaje: 'Se envió a su email la confirmación', id: result.insertId });
     });
 });
 
@@ -97,14 +107,13 @@ app.post('/servidor_nana/registro', (req, res) => {
 // RUTA 3: OBTENER TODOS LOS USUARIOS (CRUD: Consulta)
 // ==========================================
 app.get('/servidor_nana/usuarios', (req, res) => {
-    const sql = 'SELECT * FROM usuarios';
+    const sql = 'SELECT * FROM usuarios ORDER BY id DESC';
     db.query(sql, (err, results) => {
         if (err) {
             console.error('❌ Error al consultar usuarios:', err.message);
             return res.status(500).json({ error: err.message });
         }
         
-        // Mapeamos los resultados para asegurar compatibilidad total con la tabla de Vue 3
         const usuariosFormateados = results.map(user => ({
             id: user.id || user.id_usuario, 
             nombre: user.nombre,
@@ -112,7 +121,9 @@ app.get('/servidor_nana/usuarios', (req, res) => {
             cedula: user.cedula,
             email: user.email || user.email_usuario,
             celular: user.celular,
-            ciudad: user.ciudad
+            ciudad: user.ciudad,
+            departamento: user.departamento,
+            direccion: user.direccion
         }));
         
         res.json(usuariosFormateados);
@@ -120,12 +131,10 @@ app.get('/servidor_nana/usuarios', (req, res) => {
 });
 
 // ==========================================
-// RUTA 4: ELIMINAR UN USUARIO POR ID (Corregido para tu nueva BD)
+// RUTA 4: ELIMINAR UN USUARIO POR ID (CRUD: Eliminación)
 // ==========================================
 app.delete('/servidor_nana/usuarios/:id', (req, res) => {
     const { id } = req.params;
-    
-    // Dejamos la columna 'id' que es la que existe de verdad en tu phpMyAdmin
     const sql = 'DELETE FROM usuarios WHERE id = ?';
     db.query(sql, [id], (err, result) => {
         if (err) {
@@ -136,44 +145,63 @@ app.delete('/servidor_nana/usuarios/:id', (req, res) => {
     });
 });
 
-
 // ==========================================
-// RUTA 5: OBTENER PRODUCTOS (Catálogo)
+// RUTA 5: OBTENER PRODUCTOS (Catálogo con Filtros)
 // ==========================================
 app.get('/servidor_nana/productos', (req, res) => {
-    const sql = 'SELECT * FROM productos';
-    db.query(sql, (err, results) => {
+    const { categoria, busqueda } = req.query;
+
+    let sql = 'SELECT * FROM productos';
+    const params = [];
+
+    if (categoria && categoria.toLowerCase() !== 'todas' && categoria.toLowerCase() !== 'todos') {
+        sql += ' WHERE LOWER(categoria) = LOWER(?)';
+        params.push(categoria);
+    }
+
+    if (busqueda) {
+        const prefix = params.length > 0 ? ' AND' : ' WHERE';
+        sql += `${prefix} (LOWER(nombre) LIKE ? OR LOWER(categoria) LIKE ? OR codigo LIKE ?)`;
+        params.push(`%${busqueda.toLowerCase()}%`, `%${busqueda.toLowerCase()}%`, `%${busqueda}%`);
+    }
+
+    sql += ' ORDER BY id ASC';
+
+    db.query(sql, params, (err, results) => {
         if (err) {
-            const productosSimulados = [
-                { id: 1, codigo: '001', nombre: 'Buso', categoria: 'Oakley', precio: 190000, imagen_url: 'buso.jpg' },
-                { id: 2, codigo: '002', nombre: 'Camiseta', categoria: 'Oakley', precio: 90000, imagen_url: 'camiseta.jpg' },
-                { id: 3, codigo: '003', nombre: 'Pantalón', categoria: 'Oakley', precio: 250000, imagen_url: 'pantalon.jpg' }
-            ];
-            return res.json(productosSimulados);
+            console.error('Error al consultar productos:', err.message);
+            return res.status(500).json({ error: err.message });
         }
+        console.log(`[API /productos] Filtro: '${categoria || 'Todas'}' | Encontrados: ${results.length}`);
         res.json(results);
     });
 });
 
-// ====================================================================
-// 📲 NUEVAS RUTAS: MÓDULO DE CALIFICACIONES Y OPINIONES (Pégalas aquí)
-// ====================================================================
-
-// --- RUTA 6: AGREGAR CALIFICACIÓN (Inserción CRUD) ---
+// ==========================================
+// RUTA 6: AGREGAR CALIFICACIÓN (CRUD: Inserción)
+// ==========================================
 app.post('/servidor_nana/calificaciones', (req, res) => {
     const { nombre, comentario, estrellas } = req.body;
     const sql = 'INSERT INTO calificaciones (nombre_usuario, comentario, estrellas) VALUES (?, ?, ?)';
-    db.query(sql, [nombre, comentario, estrellas], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
+    db.query(sql, [nombre, comentario, estrellas || 5], (err) => {
+        if (err) {
+            console.error('Error al insertar calificación:', err.message);
+            return res.status(500).json({ error: err.message });
+        }
         res.json({ mensaje: '¡Gracias por tu opinión!' });
     });
 });
 
-// --- RUTA 7: OBTENER CALIFICACIONES (Consulta CRUD) ---
+// ==========================================
+// RUTA 7: OBTENER CALIFICACIONES (CRUD: Consulta)
+// ==========================================
 app.get('/servidor_nana/calificaciones', (req, res) => {
     const sql = 'SELECT * FROM calificaciones ORDER BY creado_en DESC';
     db.query(sql, (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
+        if (err) {
+            console.error('Error al consultar calificaciones:', err.message);
+            return res.status(500).json({ error: err.message });
+        }
         res.json(results);
     });
 });
@@ -189,7 +217,7 @@ app.post('/servidor_nana/productos', (req, res) => {
             console.error('Error al insertar producto:', err.message);
             return res.status(500).json({ error: err.message });
         }
-        res.json({ mensaje: '¡Producto registrado exitosamente en el catálogo!' });
+        res.json({ mensaje: '¡Producto registrado exitosamente en el catálogo!', id: result.insertId });
     });
 });
 
@@ -208,15 +236,12 @@ app.delete('/servidor_nana/productos/:id', (req, res) => {
     });
 });
 
-// ====================================================================
-// CONFIGURACIÓN DE ENCENDIDO (Esto ya lo tienes y se queda abajo)
-// ====================================================================
-
+// ==========================================
+// ENCENDIDO DEL SERVIDOR
+// ==========================================
 const PUERTO = 8080;
 app.listen(PUERTO, () => {
     console.log(`=======================================`);
-    console.log(`Servidor JavaScript corriendo en http://localhost:${PUERTO}/`);
+    console.log(`Servidor Cachivachez NANA corriendo en http://localhost:${PUERTO}/`);
     console.log(`=======================================`);
 });
-
-
