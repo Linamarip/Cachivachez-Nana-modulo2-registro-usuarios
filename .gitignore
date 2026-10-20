@@ -19,3 +19,4 @@ servidor_nana/rutas_reales.txt
 .DS_Store
 Thumbs.db
 .vscode/
+/node_modules
