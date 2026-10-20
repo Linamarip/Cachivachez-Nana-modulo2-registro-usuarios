@@ -58,6 +58,17 @@
             class="bg-[#8fa15b] text-white rounded-lg p-3 outline-none border border-transparent focus:border-white shadow-inner w-full" 
           />
         </div>
+
+        <div class="flex flex-col gap-1">
+          <label class="font-semibold text-gray-700">Contraseña de acceso</label>
+          <input 
+            v-model="formulario.contrasenia"
+            type="password" 
+            placeholder="contraseña alfanumérica" 
+            required
+            class="bg-[#8fa15b] placeholder-gray-200 text-white rounded-lg p-3 outline-none border border-transparent focus:border-white shadow-inner w-full" 
+          />
+        </div>
       </div>
 
       <!-- COLUMNA DERECHA -->
@@ -169,7 +180,8 @@ import { ref, onMounted } from 'vue';
 
 const formulario = ref({
   nombre: '', apellido: '', cedula: '', fechaNacimiento: '',
-  email: '', celular: '', direccion: '', ciudad: '', departamento: ''
+  email: '', celular: '', direccion: '', ciudad: '', departamento: '',
+  contrasenia: ''
 });
 
 const mensajeExito = ref('');
@@ -215,6 +227,11 @@ const manejarRegistro = async () => {
     return;
   }
 
+  if (!formulario.value.contrasenia) {
+    mensajeError.value = "Por favor, introduzca una contraseña para su cuenta.";
+    return;
+  }
+
   try {
     const respuesta = await fetch('http://localhost:8080/servidor_nana/registro', {
       method: 'POST',
@@ -225,7 +242,15 @@ const manejarRegistro = async () => {
     });
 
     if (respuesta.ok) {
-      mensajeExito.value = "Se envió a su email la confirmación";
+      mensajeExito.value = "¡Usuario registrado correctamente con su contraseña!";
+      // Persistir datos del nuevo usuario para su uso inmediato en la aplicación
+      if (formulario.value.email) {
+        localStorage.setItem('usuarioEmail', formulario.value.email);
+        localStorage.setItem('usuarioNombre', `${formulario.value.nombre} ${formulario.value.apellido}`.trim());
+        localStorage.setItem('usuarioDireccion', formulario.value.direccion);
+        localStorage.setItem('usuarioCiudad', formulario.value.ciudad);
+        localStorage.setItem('usuarioDepartamento', formulario.value.departamento);
+      }
       Object.keys(formulario.value).forEach(key => formulario.value[key] = '');
       obtenerUsuarios();
     } else {

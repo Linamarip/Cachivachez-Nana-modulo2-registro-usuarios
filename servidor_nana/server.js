@@ -35,7 +35,22 @@ app.post('/servidor_nana/login', (req, res) => {
     db.query(sql, [emailUsuario, contraseniaUsuario], (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
         if (results.length > 0) {
-            res.json({ mensaje: 'Login exitoso', idUsuario: results[0].id || results[0].id_usuario });
+            const user = results[0];
+            res.json({ 
+                mensaje: 'Login exitoso', 
+                idUsuario: user.id || user.id_usuario,
+                usuario: {
+                    id: user.id || user.id_usuario,
+                    nombre: user.nombre,
+                    apellido: user.apellido,
+                    cedula: user.cedula,
+                    email: user.email,
+                    celular: user.celular,
+                    direccion: user.direccion,
+                    ciudad: user.ciudad,
+                    departamento: user.departamento
+                }
+            });
         } else {
             res.status(401).json({ mensaje: 'Credenciales incorrectas' });
         }
@@ -58,19 +73,34 @@ app.post('/servidor_nana/registro', (req, res) => {
     const direccion = datos.direccion;
     const ciudad = datos.ciudad;
     const departamento = datos.departamento;
+    // Captura de contraseña real introducida por el usuario
+    const contrasenia = datos.contrasenia || datos.contrasena || datos.password || '123456';
 
     const sql = `INSERT INTO usuarios 
     (nombre, apellido, cedula, fecha_nacimiento, email, celular, direccion, ciudad, departamento, contrasenia) 
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
-    const valores = [nombre, apellido, cedula, fechaNacimiento, email, celular, direccion, ciudad, departamento, '123456'];
+    const valores = [nombre, apellido, cedula, fechaNacimiento, email, celular, direccion, ciudad, departamento, contrasenia];
 
     db.query(sql, valores, (err, result) => {
         if (err) {
             console.log("❌ ERROR REAL DE MYSQL EN REGISTRO:", err.message);
             return res.status(500).json({ error: err.message });
         }
-        res.json({ mensaje: 'Se envió a su email la confirmación' });
+        res.json({ 
+            mensaje: 'Se envió a su email la confirmación',
+            usuario: {
+                id: result.insertId,
+                nombre,
+                apellido,
+                cedula,
+                email,
+                celular,
+                direccion,
+                ciudad,
+                departamento
+            }
+        });
     });
 });
 
@@ -132,6 +162,26 @@ app.get('/servidor_nana/productos', (req, res) => {
             return res.json(productosSimulados);
         }
         res.json(results);
+    });
+});
+
+// --- RUTA: AGREGAR PRODUCTO (ADMIN) ---
+app.post('/servidor_nana/productos', (req, res) => {
+    const { codigo, nombre, categoria, precio, imagen_url } = req.body;
+    const sql = 'INSERT INTO productos (codigo, nombre, categoria, precio, imagen_url) VALUES (?, ?, ?, ?, ?)';
+    db.query(sql, [codigo, nombre, categoria, precio, imagen_url || 'camiseta.jpg'], (err, result) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ mensaje: 'Producto agregado exitosamente', id: result.insertId });
+    });
+});
+
+// --- RUTA: ELIMINAR PRODUCTO (ADMIN) ---
+app.delete('/servidor_nana/productos/:id', (req, res) => {
+    const { id } = req.params;
+    const sql = 'DELETE FROM productos WHERE id = ?';
+    db.query(sql, [id], (err, result) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ mensaje: 'Producto eliminado exitosamente' });
     });
 });
 

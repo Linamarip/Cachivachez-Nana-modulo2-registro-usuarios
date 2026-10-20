@@ -1,13 +1,21 @@
-# Ignorar carpetas de compilación de Java
+# Dependencias
+node_modules/
+*/node_modules/
+nanainicio/node_modules/
+servidor_nana/node_modules/
+
+# Archivos de distribución / compilación
+nanainicio/dist/
+dist/
 servidor_nana/bin/
 servidor_nana/fuentes.txt
 servidor_nana/rutas_reales.txt
 
-# Ignorar carpetas de dependencias del Frontend
-nanainicio/node_modules/
-nanainicio/dist/
+# Copias temporales de Windows
+* - copia*
+*-copia*
 
-# Ignorar archivos del sistema y entornos virtuales
+# Archivos del sistema y entornos virtuales
 .DS_Store
 Thumbs.db
 .vscode/

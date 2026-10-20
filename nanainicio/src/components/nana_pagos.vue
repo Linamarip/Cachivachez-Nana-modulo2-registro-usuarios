@@ -166,7 +166,7 @@
 </template> <!-- <-- AQUÍ SE CIERRA EL TEMPLATE QUE FALTABA -->
 
 <script setup>
-import { ref, defineProps } from 'vue';
+import { ref, onMounted, defineProps } from 'vue';
 
 const props = defineProps({
   totalPedido: {
@@ -183,10 +183,21 @@ const mostrarModalTransferencia = ref(false);
 const vistaPreviaImagen = ref(null);         
 
 const direccionEnvio = ref({
-  destinatario: 'Lina María Rincón',
-  nomenclatura: 'Avenida Sur #23-45, Bloque 3',
-  ciudad: 'Pereira',
-  departamento: 'Risaralda'
+  destinatario: localStorage.getItem('usuarioNombre') || 'Mercedes Calpa',
+  nomenclatura: localStorage.getItem('usuarioDireccion') || 'Cl. 12a #71c-60',
+  ciudad: localStorage.getItem('usuarioCiudad') || 'Pasto',
+  departamento: localStorage.getItem('usuarioDepartamento') || 'Nariño'
+});
+
+onMounted(() => {
+  const nombre = localStorage.getItem('usuarioNombre');
+  const dir = localStorage.getItem('usuarioDireccion');
+  const ciud = localStorage.getItem('usuarioCiudad');
+  const dep = localStorage.getItem('usuarioDepartamento');
+  if (nombre) direccionEnvio.value.destinatario = nombre;
+  if (dir) direccionEnvio.value.nomenclatura = dir;
+  if (ciud) direccionEnvio.value.ciudad = ciud;
+  if (dep) direccionEnvio.value.departamento = dep;
 });
 
 const manejarConfirmacionBoton = () => {
