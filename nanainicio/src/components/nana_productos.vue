@@ -285,11 +285,21 @@ const obtenerColorBadge = (categoria) => {
 // Mapeo seguro de imágenes compatible con Vite
 const obtenerImagenLocal = (nombreImagen) => {
   if (!nombreImagen) return new URL('/src/assets/camiseta.jpg', import.meta.url).href;
+  const limpio = nombreImagen.trim();
   try {
-    return new URL(`/src/assets/${nombreImagen}`, import.meta.url).href;
+    return new URL(`/src/assets/${limpio}`, import.meta.url).href;
   } catch (e) {
-    return new URL('/src/assets/camiseta.jpg', import.meta.url).href;
+    try {
+      if (!limpio.includes('.')) {
+        return new URL(`/src/assets/${limpio}.jpg`, import.meta.url).href;
+      }
+    } catch (e2) {}
   }
+  // Mapeos inteligentes adicionales
+  if (limpio.toLowerCase().includes('olivo') || limpio.toLowerCase().includes('oliva')) {
+    return new URL('/src/assets/camiseta_olivo.jpg', import.meta.url).href;
+  }
+  return new URL('/src/assets/camiseta.jpg', import.meta.url).href;
 };
 
 // Fallback si la imagen no carga

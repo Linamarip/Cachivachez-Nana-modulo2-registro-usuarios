@@ -175,6 +175,17 @@ app.post('/servidor_nana/productos', (req, res) => {
     });
 });
 
+// --- RUTA: ACTUALIZAR / EDITAR PRODUCTO O CAMBIAR IMAGEN (ADMIN) ---
+app.put('/servidor_nana/productos/:id', (req, res) => {
+    const { id } = req.params;
+    const { codigo, nombre, categoria, precio, imagen_url } = req.body;
+    const sql = 'UPDATE productos SET codigo = ?, nombre = ?, categoria = ?, precio = ?, imagen_url = ? WHERE id = ?';
+    db.query(sql, [codigo, nombre, categoria, precio, imagen_url || 'camiseta.jpg', id], (err, result) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ mensaje: 'Producto actualizado con éxito en la base de datos' });
+    });
+});
+
 // --- RUTA: ELIMINAR PRODUCTO (ADMIN) ---
 app.delete('/servidor_nana/productos/:id', (req, res) => {
     const { id } = req.params;

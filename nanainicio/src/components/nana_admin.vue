@@ -8,7 +8,7 @@
             Acceso Administrativo
           </span>
           <h2 class="text-3xl font-black text-gray-800 mt-2">Panel de Control General</h2>
-          <p class="text-sm text-gray-700 font-medium">Gestión integral de inventario multimarca y usuarios registrados en MySQL</p>
+          <p class="text-sm text-gray-700 font-medium">Gestión integral de inventario multimarca, cambio de imágenes y clientes en MySQL</p>
         </div>
 
         <!-- Selector de Pestañas Administrativas -->
@@ -41,7 +41,7 @@
       <!-- COLUMNA IZQUIERDA: FORMULARIO DE NUEVA PRENDA -->
       <div class="bg-white rounded-3xl p-6 shadow-xl border border-gray-100 h-fit">
         <h3 class="text-xl font-black text-gray-800 mb-1 flex items-center gap-2">
-          <span>➕</span> Registrar Prenda
+          <span>➕</span> Registrar Nueva Prenda
         </h3>
         <p class="text-xs text-gray-500 mb-4">Ingresa los datos para incorporar un producto al catálogo en MySQL.</p>
         
@@ -51,7 +51,7 @@
             <input 
               v-model="nuevoProducto.codigo" 
               type="text" 
-              placeholder="Ej: OAK-006, ADI-005" 
+              placeholder="Ej: OAK-006, ADI-004" 
               required 
               class="bg-gray-50 text-gray-800 rounded-xl p-2.5 text-xs outline-none border border-gray-200 focus:border-[#6b4e8b] focus:bg-white" 
             />
@@ -62,7 +62,7 @@
             <input 
               v-model="nuevoProducto.nombre" 
               type="text" 
-              placeholder="Ej: Chaqueta Deportiva, Gorra" 
+              placeholder="Ej: Camiseta Olivo M-C, Tenis Running" 
               required 
               class="bg-gray-50 text-gray-800 rounded-xl p-2.5 text-xs outline-none border border-gray-200 focus:border-[#6b4e8b] focus:bg-white" 
             />
@@ -90,22 +90,31 @@
             <input 
               v-model.number="nuevoProducto.precio" 
               type="number" 
-              placeholder="Ej: 190000" 
+              placeholder="Ej: 150000" 
               required 
               min="1000"
               class="bg-gray-50 text-gray-800 rounded-xl p-2.5 text-xs outline-none border border-gray-200 focus:border-[#6b4e8b] focus:bg-white" 
             />
           </div>
 
+          <!-- Nombre de Archivo de Imagen con Autocompletado y Vista Previa -->
           <div class="flex flex-col gap-1">
             <label class="font-bold text-gray-700 text-xs">Nombre de Archivo de Imagen</label>
             <input 
               v-model="nuevoProducto.imagen_url" 
               type="text" 
-              placeholder="Ej: camiseta.jpg, tenis_adidas.jpg" 
+              placeholder="Ej: camiseta_olivo.jpg, tenis_adidas.jpg" 
               class="bg-gray-50 text-gray-800 rounded-xl p-2.5 text-xs outline-none border border-gray-200 focus:border-[#6b4e8b] focus:bg-white" 
             />
-            <span class="text-[10px] text-gray-400">Si se omite, se asignará la imagen estándar de catálogo.</span>
+            <span class="text-[10px] text-gray-400">Guarda tu archivo .jpg en la carpeta <strong>src/assets/</strong> y escribe su nombre con .jpg</span>
+            
+            <!-- Vista previa de imagen en formulario -->
+            <div class="mt-2 p-2 bg-gray-50 rounded-xl border border-gray-200 flex items-center gap-3">
+              <div class="w-12 h-12 rounded-lg bg-white border border-gray-200 overflow-hidden flex items-center justify-center p-1 shrink-0">
+                <img :src="obtenerImagenLocal(nuevoProducto.imagen_url)" class="max-h-full max-w-full object-contain" @error="$event.target.src = obtenerImagenLocal('camiseta.jpg')" />
+              </div>
+              <span class="text-[11px] text-gray-500 truncate">Vista previa: {{ nuevoProducto.imagen_url || 'camiseta.jpg (estándar)' }}</span>
+            </div>
           </div>
 
           <button 
@@ -145,6 +154,7 @@
             <table class="w-full text-left border-collapse text-xs">
               <thead class="bg-gray-50 text-gray-700 uppercase text-[11px] font-black border-b border-gray-100">
                 <tr>
+                  <th class="p-3.5">Foto</th>
                   <th class="p-3.5">Código</th>
                   <th class="p-3.5">Prenda</th>
                   <th class="p-3.5">Marca</th>
@@ -154,6 +164,12 @@
               </thead>
               <tbody class="divide-y divide-gray-100 text-gray-600">
                 <tr v-for="prod in listaFiltradaAdmin" :key="prod.id" class="hover:bg-gray-50 transition-colors">
+                  <!-- Miniatura de Imagen en la tabla -->
+                  <td class="p-2">
+                    <div class="w-10 h-10 rounded-lg bg-gray-50 border border-gray-200 overflow-hidden flex items-center justify-center p-0.5">
+                      <img :src="obtenerImagenLocal(prod.imagen_url)" class="max-h-full max-w-full object-contain" @error="$event.target.src = obtenerImagenLocal('camiseta.jpg')" />
+                    </div>
+                  </td>
                   <td class="p-3.5 font-mono font-bold text-purple-900">{{ prod.codigo }}</td>
                   <td class="p-3.5 font-bold text-gray-800">{{ prod.nombre }}</td>
                   <td class="p-3.5">
@@ -162,13 +178,24 @@
                     </span>
                   </td>
                   <td class="p-3.5 font-extrabold text-gray-800">${{ Number(prod.precio).toLocaleString('es-CO') }}</td>
-                  <td class="p-3.5 text-center">
+                  <td class="p-3.5 text-center flex items-center justify-center gap-1.5">
+                    <!-- BOTÓN CAMBIAR / EDITAR PRODUCTO E IMAGEN -->
+                    <button 
+                      type="button"
+                      @click="abrirModalEdicion(prod)" 
+                      class="bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold py-1.5 px-2.5 rounded-lg shadow transition-all active:scale-95 cursor-pointer flex items-center gap-1"
+                      title="Cambiar imagen o editar información de esta prenda"
+                    >
+                      <span>✏️</span> Editar
+                    </button>
+                    <!-- BOTÓN ELIMINAR -->
                     <button 
                       type="button"
                       @click="eliminarProductoCatalogo(prod.id)" 
-                      class="bg-red-500 hover:bg-red-600 text-white text-[11px] font-bold py-1.5 px-3 rounded-lg shadow transition-all active:scale-95 cursor-pointer"
+                      class="bg-red-500 hover:bg-red-600 text-white text-[11px] font-bold py-1.5 px-2.5 rounded-lg shadow transition-all active:scale-95 cursor-pointer"
+                      title="Eliminar permanentemente de MySQL"
                     >
-                      Eliminar 🗑️
+                      🗑️
                     </button>
                   </td>
                 </tr>
@@ -243,6 +270,83 @@
       </div>
     </div>
 
+    <!-- ==================================================== -->
+    <!-- MODAL DE EDICIÓN Y CAMBIO DE IMAGEN DE PRODUCTO -->
+    <!-- ==================================================== -->
+    <div v-if="mostrarModalEditar" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-gray-100 text-left">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xl font-black text-gray-800 flex items-center gap-2">
+            <span>✏️</span> Editar Prenda y Cambiar Imagen
+          </h3>
+          <button @click="mostrarModalEditar = false" class="text-gray-400 hover:text-gray-600 font-black text-lg cursor-pointer">✕</button>
+        </div>
+
+        <form @submit.prevent="guardarEdicionProducto" class="flex flex-col gap-3.5">
+          <div class="grid grid-cols-2 gap-3">
+            <div class="flex flex-col gap-1">
+              <label class="font-bold text-gray-700 text-xs">Código</label>
+              <input v-model="productoEnEdicion.codigo" type="text" required class="bg-gray-50 border p-2 rounded-xl text-xs" />
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="font-bold text-gray-700 text-xs">Marca / Categoría</label>
+              <select v-model="productoEnEdicion.categoria" required class="bg-gray-50 border p-2 rounded-xl text-xs font-semibold">
+                <option value="Oakley">Oakley</option>
+                <option value="Adidas">Adidas</option>
+                <option value="Victoria Secret">Victoria Secret</option>
+                <option value="Puma">Puma</option>
+                <option value="Polo">Polo</option>
+                <option value="Varios">Varios</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <label class="font-bold text-gray-700 text-xs">Nombre de la Prenda</label>
+            <input v-model="productoEnEdicion.nombre" type="text" required class="bg-gray-50 border p-2 rounded-xl text-xs" />
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <label class="font-bold text-gray-700 text-xs">Precio (COP $)</label>
+            <input v-model.number="productoEnEdicion.precio" type="number" required min="1000" class="bg-gray-50 border p-2 rounded-xl text-xs" />
+          </div>
+
+          <!-- CAMPO CLAVE: NOMBRE DEL ARCHIVO DE IMAGEN -->
+          <div class="flex flex-col gap-1">
+            <label class="font-bold text-gray-700 text-xs">Nombre de Archivo de Imagen (.jpg)</label>
+            <input 
+              v-model="productoEnEdicion.imagen_url" 
+              type="text" 
+              placeholder="Ej: camiseta_olivo.jpg" 
+              required 
+              class="bg-gray-50 border p-2 rounded-xl text-xs font-mono text-purple-900" 
+            />
+            <span class="text-[10px] text-gray-400">Debe coincidir con el archivo guardado en <strong>src/assets/</strong></span>
+          </div>
+
+          <!-- Vista previa en tiempo real dentro del modal -->
+          <div class="p-3 bg-gray-50 rounded-2xl border border-gray-200 flex items-center gap-4">
+            <div class="w-16 h-16 rounded-xl bg-white border border-gray-200 overflow-hidden flex items-center justify-center p-1 shrink-0">
+              <img :src="obtenerImagenLocal(productoEnEdicion.imagen_url)" class="max-h-full max-w-full object-contain" @error="$event.target.src = obtenerImagenLocal('camiseta.jpg')" />
+            </div>
+            <div class="text-xs text-gray-600">
+              <p class="font-bold text-gray-800">Vista previa en tiempo real</p>
+              <p class="text-[11px] text-gray-500 font-mono">{{ productoEnEdicion.imagen_url }}</p>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-2 mt-2">
+            <button type="button" @click="mostrarModalEditar = false" class="px-4 py-2 border rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-50 cursor-pointer">
+              Cancelar
+            </button>
+            <button type="submit" class="px-5 py-2 bg-[#6b4e8b] hover:bg-[#5a3f75] text-white rounded-xl text-xs font-bold shadow cursor-pointer">
+              Guardar Cambios 💾
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -258,9 +362,20 @@ const listaUsuariosAdmin = ref([]);
 const nuevoProducto = ref({ 
   codigo: '', 
   nombre: '', 
-  categoria: 'Oakley', 
+  categoria: 'Adidas', 
   precio: '', 
   imagen_url: '' 
+});
+
+// Estado del Modal de Edición
+const mostrarModalEditar = ref(false);
+const productoEnEdicion = ref({
+  id: null,
+  codigo: '',
+  nombre: '',
+  categoria: 'Adidas',
+  precio: 0,
+  imagen_url: ''
 });
 
 const listaFiltradaAdmin = computed(() => {
@@ -270,7 +385,23 @@ const listaFiltradaAdmin = computed(() => {
   );
 });
 
-// Cargar catálogo de prendas
+// Función robusta para cargar imágenes de assets compatibles con Vite
+const obtenerImagenLocal = (nombreImagen) => {
+  if (!nombreImagen) return new URL('/src/assets/camiseta.jpg', import.meta.url).href;
+  const limpio = nombreImagen.trim();
+  try {
+    return new URL(`/src/assets/${limpio}`, import.meta.url).href;
+  } catch (e) {
+    try {
+      if (!limpio.includes('.')) {
+        return new URL(`/src/assets/${limpio}.jpg`, import.meta.url).href;
+      }
+    } catch (e2) {}
+  }
+  return new URL('/src/assets/camiseta.jpg', import.meta.url).href;
+};
+
+// Cargar catálogo de prendas desde MySQL
 const cargarInventario = async () => {
   try {
     const respuesta = await fetch('http://localhost:8080/servidor_nana/productos');
@@ -294,12 +425,21 @@ const cargarUsuarios = async () => {
   }
 };
 
+// Sanitizar nombre de archivo de imagen
+const sanitizarNombreImagen = (nombre) => {
+  if (!nombre) return 'camiseta.jpg';
+  let limpio = nombre.trim();
+  // Si no tiene extensión, agregar .jpg automáticamente
+  if (!limpio.includes('.')) {
+    limpio = `${limpio}.jpg`;
+  }
+  return limpio;
+};
+
 // Guardar prenda nueva
 const guardarNuevoProducto = async () => {
   try {
-    if (!nuevoProducto.value.imagen_url) {
-      nuevoProducto.value.imagen_url = 'camiseta.jpg';
-    }
+    nuevoProducto.value.imagen_url = sanitizarNombreImagen(nuevoProducto.value.imagen_url);
 
     const respuesta = await fetch('http://localhost:8080/servidor_nana/productos', {
       method: 'POST',
@@ -309,7 +449,7 @@ const guardarNuevoProducto = async () => {
 
     if (respuesta.ok) {
       alert('¡Prenda agregada con éxito al catálogo de la tienda en MySQL!');
-      nuevoProducto.value = { codigo: '', nombre: '', categoria: 'Oakley', precio: '', imagen_url: '' };
+      nuevoProducto.value = { codigo: '', nombre: '', categoria: 'Adidas', precio: '', imagen_url: '' };
       cargarInventario();
     } else {
       const err = await respuesta.json();
@@ -317,6 +457,36 @@ const guardarNuevoProducto = async () => {
     }
   } catch (error) {
     console.error("Error guardando producto:", error);
+  }
+};
+
+// Abrir modal para editar producto existente o cambiar su imagen
+const abrirModalEdicion = (prod) => {
+  productoEnEdicion.value = { ...prod };
+  mostrarModalEditar.value = true;
+};
+
+// Guardar edición del producto en MySQL
+const guardarEdicionProducto = async () => {
+  try {
+    productoEnEdicion.value.imagen_url = sanitizarNombreImagen(productoEnEdicion.value.imagen_url);
+
+    const respuesta = await fetch(`http://localhost:8080/servidor_nana/productos/${productoEnEdicion.value.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(productoEnEdicion.value)
+    });
+
+    if (respuesta.ok) {
+      alert('¡Producto e imagen actualizados correctamente en MySQL!');
+      mostrarModalEditar.value = false;
+      cargarInventario();
+    } else {
+      const err = await respuesta.json();
+      alert(`Error al actualizar producto: ${err.error || 'Intente nuevamente'}`);
+    }
+  } catch (error) {
+    console.error("Error actualizando producto:", error);
   }
 };
 
