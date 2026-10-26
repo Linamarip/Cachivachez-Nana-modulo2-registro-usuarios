@@ -151,7 +151,7 @@ app.delete('/servidor_nana/usuarios/:id', (req, res) => {
 // RUTA 5: OBTENER PRODUCTOS (Catálogo)
 // ==========================================
 app.get('/servidor_nana/productos', (req, res) => {
-    const sql = 'SELECT * FROM productos';
+    const sql = 'SELECT * FROM productos ORDER BY id ASC';
     db.query(sql, (err, results) => {
         if (err) {
             const productosSimulados = [
@@ -165,13 +165,32 @@ app.get('/servidor_nana/productos', (req, res) => {
     });
 });
 
-// --- RUTA: AGREGAR PRODUCTO (ADMIN) ---
+// --- RUTA: AGREGAR O ACTUALIZAR PRODUCTO (ADMIN: UPSERT SEGURO) ---
 app.post('/servidor_nana/productos', (req, res) => {
     const { codigo, nombre, categoria, precio, imagen_url } = req.body;
-    const sql = 'INSERT INTO productos (codigo, nombre, categoria, precio, imagen_url) VALUES (?, ?, ?, ?, ?)';
+    
+    // Si la referencia/código ya existe, actualiza los campos; si no existe, la crea (UPSERT)
+    const sql = `
+        INSERT INTO productos (codigo, nombre, categoria, precio, imagen_url) 
+        VALUES (?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE 
+            nombre = VALUES(nombre), 
+            categoria = VALUES(categoria), 
+            precio = VALUES(precio), 
+            imagen_url = VALUES(imagen_url)
+    `;
+
     db.query(sql, [codigo, nombre, categoria, precio, imagen_url || 'camiseta.jpg'], (err, result) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ mensaje: 'Producto agregado exitosamente', id: result.insertId });
+        if (err) {
+            console.error('❌ Error registrando/actualizando producto:', err.message);
+            return res.status(500).json({ error: err.message });
+        }
+        console.log(`✅ Producto procesado correctamente en MySQL: ${codigo} - ${nombre}`);
+        res.json({ 
+            mensaje: 'Prenda registrada y actualizada exitosamente en el catálogo de MySQL', 
+            id: result.insertId || 'actualizado',
+            codigo: codigo
+        });
     });
 });
 
@@ -197,7 +216,7 @@ app.delete('/servidor_nana/productos/:id', (req, res) => {
 });
 
 // ====================================================================
-// 📲 NUEVAS RUTAS: MÓDULO DE CALIFICACIONES Y OPINIONES (Pégalas aquí)
+// 📲 NUEVAS RUTAS: MÓDULO DE CALIFICACIONES Y OPINIONES
 // ====================================================================
 
 // --- RUTA 6: AGREGAR CALIFICACIÓN (Inserción CRUD) ---
@@ -220,7 +239,7 @@ app.get('/servidor_nana/calificaciones', (req, res) => {
 });
 
 // ====================================================================
-// CONFIGURACIÓN DE ENCENDIDO (Esto ya lo tienes y se queda abajo)
+// CONFIGURACIÓN DE ENCENDIDO
 // ====================================================================
 
 const PUERTO = 8080;

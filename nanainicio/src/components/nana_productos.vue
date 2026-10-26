@@ -17,10 +17,10 @@
         <div class="flex flex-wrap items-center gap-3">
           <div class="relative">
             <input 
-              v-model="terminoBusqueda"
+              v-model="terminoBusqueda" 
               type="text" 
               placeholder="Buscar prenda..." 
-              class="bg-white text-gray-800 text-xs font-semibold rounded-full px-4 py-2.5 pl-8 border border-gray-200 outline-none focus:ring-2 focus:ring-green-600 shadow-sm w-48 sm:w-56"
+              class="bg-white text-gray-800 text-xs font-semibold rounded-full px-4 py-2.5 pl-8 border border-gray-200 outline-none focus:ring-2 focus:ring-green-600 shadow-sm w-48 sm:w-56" 
             />
             <span class="absolute left-3 top-2.5 text-xs text-gray-400">🔍</span>
             <button 
@@ -33,7 +33,7 @@
           </div>
 
           <select 
-            v-model="ordenPrecio"
+            v-model="ordenPrecio" 
             class="bg-white text-gray-700 text-xs font-bold px-3 py-2.5 rounded-full border border-gray-200 outline-none cursor-pointer hover:bg-gray-50 focus:ring-2 focus:ring-green-600 shadow-sm"
           >
             <option value="defecto">Ordenar por: Relevancia</option>
@@ -47,18 +47,18 @@
       <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
         <button 
           v-for="m in listaMarcas" 
-          :key="m.id"
-          @click="seleccionarMarca(m.nombre)"
+          :key="m.id" 
+          @click="seleccionarMarca(m.nombre)" 
           :class="marcaSeleccionada.toLowerCase() === m.nombre.toLowerCase() 
             ? 'bg-[#6b4e8b] text-white shadow-md scale-105' 
-            : 'bg-white/80 text-gray-700 hover:bg-white border border-gray-100'"
+            : 'bg-white/80 text-gray-700 hover:bg-white border border-gray-100'" 
           class="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider transition-all duration-200 cursor-pointer shrink-0 active:scale-95"
         >
           <span>{{ m.icono }}</span>
           <span>{{ m.nombre }}</span>
           <span 
             v-if="conteoPorMarca[m.nombre.toLowerCase()]" 
-            :class="marcaSeleccionada.toLowerCase() === m.nombre.toLowerCase() ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'"
+            :class="marcaSeleccionada.toLowerCase() === m.nombre.toLowerCase() ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'" 
             class="text-[10px] px-1.5 py-0.5 rounded-full font-bold ml-0.5"
           >
             {{ conteoPorMarca[m.nombre.toLowerCase()] }}
@@ -73,7 +73,7 @@
           <span v-if="marcaSeleccionada !== 'Todas'"> de la marca <strong class="text-purple-900">{{ marcaSeleccionada }}</strong></span>
         </span>
         <button 
-          v-if="marcaSeleccionada !== 'Todas' || terminoBusqueda"
+          v-if="marcaSeleccionada !== 'Todas' || terminoBusqueda" 
           @click="restablecerFiltros" 
           class="text-xs text-purple-900 underline font-bold hover:text-purple-700 cursor-pointer"
         >
@@ -90,7 +90,7 @@
         No hay productos que coincidan con la marca "{{ marcaSeleccionada }}" o el término "{{ terminoBusqueda }}".
       </p>
       <button 
-        @click="restablecerFiltros"
+        @click="restablecerFiltros" 
         class="bg-[#6b4e8b] hover:bg-[#5a3f75] text-white font-bold py-2.5 px-6 rounded-xl text-xs uppercase shadow transition-all cursor-pointer"
       >
         Ver Todos los Productos
@@ -107,7 +107,7 @@
       >
         <!-- Badge de Marca Flotante -->
         <span 
-          :class="obtenerColorBadge(producto.categoria)"
+          :class="obtenerColorBadge(producto.categoria)" 
           class="absolute top-7 left-7 z-10 text-[10px] font-black uppercase px-2.5 py-1 rounded-full shadow-sm tracking-wider"
         >
           {{ producto.categoria }}
@@ -116,10 +116,10 @@
         <!-- Contenedor Blanco para la Imagen -->
         <div class="w-full bg-gray-50 rounded-2xl p-4 flex items-center justify-center border border-gray-100 mb-4 h-64 shadow-inner overflow-hidden relative">
           <img 
-            :src="obtenerImagenLocal(producto.imagen_url)" 
+            :src="obtenerImagenProducto(producto.imagen_url, producto.categoria)" 
             :alt="producto.nombre" 
-            @error="manejarErrorImagen($event, producto)"
-            class="max-h-full max-w-full object-contain rounded-xl transition-transform duration-300 group-hover:scale-105"
+            @error="manejarErrorImagen" 
+            class="max-h-full max-w-full object-contain rounded-xl transition-transform duration-300 group-hover:scale-105" 
           />
         </div>
 
@@ -178,6 +178,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
+import { obtenerImagenProducto, imagenPorDefecto } from '../utils/imagenes.js';
 
 const props = defineProps({
   onAgregar: {
@@ -282,29 +283,9 @@ const obtenerColorBadge = (categoria) => {
   }
 };
 
-// Mapeo seguro de imágenes compatible con Vite
-const obtenerImagenLocal = (nombreImagen) => {
-  if (!nombreImagen) return new URL('/src/assets/camiseta.jpg', import.meta.url).href;
-  const limpio = nombreImagen.trim();
-  try {
-    return new URL(`/src/assets/${limpio}`, import.meta.url).href;
-  } catch (e) {
-    try {
-      if (!limpio.includes('.')) {
-        return new URL(`/src/assets/${limpio}.jpg`, import.meta.url).href;
-      }
-    } catch (e2) {}
-  }
-  // Mapeos inteligentes adicionales
-  if (limpio.toLowerCase().includes('olivo') || limpio.toLowerCase().includes('oliva')) {
-    return new URL('/src/assets/camiseta_olivo.jpg', import.meta.url).href;
-  }
-  return new URL('/src/assets/camiseta.jpg', import.meta.url).href;
-};
-
 // Fallback si la imagen no carga
-const manejarErrorImagen = (evento, producto) => {
-  evento.target.src = new URL('/src/assets/camiseta.jpg', import.meta.url).href;
+const manejarErrorImagen = (evento) => {
+  evento.target.src = imagenPorDefecto;
 };
 
 // Carga asíncrona de productos desde MySQL

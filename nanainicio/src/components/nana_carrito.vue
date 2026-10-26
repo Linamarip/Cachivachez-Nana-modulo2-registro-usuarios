@@ -37,7 +37,7 @@
           <!-- Imagen del Producto con mapeo exacto de Tenis y demás prendas -->
           <div class="w-24 h-24 bg-gray-50 rounded-2xl p-2 flex items-center justify-center border border-gray-100 shadow-inner shrink-0 overflow-hidden">
             <img 
-              :src="obtenerRutaImagen(item)" 
+              :src="obtenerImagenProducto(item.imagen_url || item.nombre, item.categoria)" 
               :alt="item.nombre" 
               @error="manejarErrorImagen"
               class="max-h-full max-w-full object-contain rounded-lg" 
@@ -156,6 +156,7 @@
 
 <script setup>
 import { computed } from 'vue';
+import { obtenerImagenProducto, imagenPorDefecto } from '../utils/imagenes.js';
 
 const props = defineProps({
   items: {
@@ -187,106 +188,9 @@ const procesarDespachoYAvance = () => {
   }
 };
 
-// Mapeo exhaustivo y seguro de imágenes de assets de Vite
-const obtenerRutaImagen = (item) => {
-  if (!item) return new URL('/src/assets/camiseta.jpg', import.meta.url).href;
-  
-  // 1. Si el producto tiene imagen_url registrada
-  if (item.imagen_url) {
-    try {
-      return new URL(`/src/assets/${item.imagen_url}`, import.meta.url).href;
-    } catch (e) {
-      // Continúa a búsqueda por palabras clave
-    }
-  }
-
-  // 2. Mapeo inteligente por nombre o categoría
-  const nombre = (item.nombre || '').toLowerCase();
-  const categoria = (item.categoria || '').toLowerCase();
-
-  // TENIS (Soluciona el error específico de visualización de calzado tenis)
-  if (nombre.includes('tenis')) {
-    if (nombre.includes('puma') || categoria.includes('puma')) {
-      return new URL('/src/assets/tenis_puma.jpg', import.meta.url).href;
-    }
-    return new URL('/src/assets/tenis_adidas.jpg', import.meta.url).href;
-  }
-
-  // OTRAS PRENDAS
-  if (nombre.includes('buso') || nombre.includes('hoodie')) {
-    if (nombre.includes('puma') || categoria.includes('puma')) {
-      return new URL('/src/assets/hoodie_puma.jpg', import.meta.url).href;
-    }
-    return new URL('/src/assets/buso.jpg', import.meta.url).href;
-  }
-  if (nombre.includes('chaqueta')) {
-    return new URL('/src/assets/chaqueta_adidas.jpg', import.meta.url).href;
-  }
-  if (nombre.includes('sudadera')) {
-    return new URL('/src/assets/sudadera_adidas.jpg', import.meta.url).href;
-  }
-  if (nombre.includes('jogger')) {
-    return new URL('/src/assets/jogger_puma.jpg', import.meta.url).href;
-  }
-  if (nombre.includes('pantalon') || nombre.includes('pantalón')) {
-    return new URL('/src/assets/pantalon.jpg', import.meta.url).href;
-  }
-  if (nombre.includes('camisa') || nombre.includes('polo')) {
-    if (nombre.includes('classic')) return new URL('/src/assets/polo_classic.jpg', import.meta.url).href;
-    return new URL('/src/assets/camisa_polo.jpg', import.meta.url).href;
-  }
-  if (nombre.includes('camiseta')) {
-    if (nombre.includes('adidas') || categoria.includes('adidas')) {
-      return new URL('/src/assets/camiseta_adidas.jpg', import.meta.url).href;
-    }
-    return new URL('/src/assets/camiseta.jpg', import.meta.url).href;
-  }
-  if (nombre.includes('pijama')) {
-    return new URL('/src/assets/pijama_vs.jpg', import.meta.url).href;
-  }
-  if (nombre.includes('locion') || nombre.includes('loción')) {
-    return new URL('/src/assets/locion_vs.jpg', import.meta.url).href;
-  }
-  if (nombre.includes('splash')) {
-    return new URL('/src/assets/splash_vs.jpg', import.meta.url).href;
-  }
-  if (nombre.includes('bolso')) {
-    return new URL('/src/assets/bolso_vs.jpg', import.meta.url).href;
-  }
-  if (nombre.includes('mochila')) {
-    return new URL('/src/assets/mochila_puma.jpg', import.meta.url).href;
-  }
-  if (nombre.includes('rinonera') || nombre.includes('riñonera')) {
-    return new URL('/src/assets/rinonera_varios.jpg', import.meta.url).href;
-  }
-  if (nombre.includes('billetera')) {
-    return new URL('/src/assets/billetera_polo.jpg', import.meta.url).href;
-  }
-  if (nombre.includes('gafas')) {
-    return new URL('/src/assets/gafas_oakley.jpg', import.meta.url).href;
-  }
-  if (nombre.includes('gorra')) {
-    if (nombre.includes('polo') || categoria.includes('polo')) {
-      return new URL('/src/assets/gorra_polo.jpg', import.meta.url).href;
-    }
-    return new URL('/src/assets/gorra_oakley.jpg', import.meta.url).href;
-  }
-  if (nombre.includes('reloj')) {
-    return new URL('/src/assets/reloj_varios.jpg', import.meta.url).href;
-  }
-  if (nombre.includes('termo')) {
-    return new URL('/src/assets/termo_varios.jpg', import.meta.url).href;
-  }
-  if (nombre.includes('cinturon') || nombre.includes('cinturón')) {
-    return new URL('/src/assets/cinturon_varios.jpg', import.meta.url).href;
-  }
-
-  return new URL('/src/assets/camiseta.jpg', import.meta.url).href;
-};
-
 // Fallback si la imagen no carga
 const manejarErrorImagen = (evento) => {
-  evento.target.src = new URL('/src/assets/camiseta.jpg', import.meta.url).href;
+  evento.target.src = imagenPorDefecto;
 };
 
 // Cálculos matemáticos
