@@ -9,7 +9,7 @@
           </span>
           <h2 class="text-3xl font-black text-gray-800 mt-2">Nuestros Productos</h2>
           <p class="text-sm text-gray-700 font-medium">
-            Selecciona una marca para filtrar o busca directamente tu prenda favorita
+            Selecciona una marca oficial o busca directamente tu prenda favorita
           </p>
         </div>
 
@@ -43,7 +43,7 @@
         </div>
       </div>
 
-      <!-- BOTONES DE FILTRO POR MARCA -->
+      <!-- BOTONES DE FILTRO POR MARCA CON LOGOS REALES -->
       <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
         <button 
           v-for="m in listaMarcas" 
@@ -52,9 +52,16 @@
           :class="marcaSeleccionada.toLowerCase() === m.nombre.toLowerCase() 
             ? 'bg-[#6b4e8b] text-white shadow-md scale-105' 
             : 'bg-white/80 text-gray-700 hover:bg-white border border-gray-100'" 
-          class="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider transition-all duration-200 cursor-pointer shrink-0 active:scale-95"
+          class="flex items-center gap-2 px-3.5 py-2 rounded-full text-xs font-black uppercase tracking-wider transition-all duration-200 cursor-pointer shrink-0 active:scale-95"
         >
-          <span>{{ m.icono }}</span>
+          <!-- Logo real pequeño de la marca -->
+          <img 
+            v-if="obtenerLogoMarca(m.nombre)" 
+            :src="obtenerLogoMarca(m.nombre)" 
+            class="w-5 h-5 object-contain rounded-full bg-white p-0.5 shadow-sm inline-block shrink-0" 
+            :alt="m.nombre" 
+          />
+          <span v-else>{{ m.icono }}</span>
           <span>{{ m.nombre }}</span>
           <span 
             v-if="conteoPorMarca[m.nombre.toLowerCase()]" 
@@ -105,13 +112,18 @@
         :key="producto.id" 
         class="bg-white rounded-[2rem] shadow-xl overflow-hidden p-5 flex flex-col items-center border border-gray-100 transition-all hover:scale-[1.02] hover:shadow-2xl duration-300 relative group text-left"
       >
-        <!-- Badge de Marca Flotante -->
-        <span 
-          :class="obtenerColorBadge(producto.categoria)" 
-          class="absolute top-7 left-7 z-10 text-[10px] font-black uppercase px-2.5 py-1 rounded-full shadow-sm tracking-wider"
-        >
-          {{ producto.categoria }}
-        </span>
+        <!-- Badge de Marca Flotante con Logo -->
+        <div class="absolute top-6 left-6 z-10 flex items-center gap-1.5 bg-black/80 backdrop-blur-sm text-white px-3 py-1 rounded-full shadow-md">
+          <img 
+            v-if="obtenerLogoMarca(producto.categoria)" 
+            :src="obtenerLogoMarca(producto.categoria)" 
+            class="w-4 h-4 object-contain rounded-full bg-white p-0.5 inline-block shrink-0" 
+            :alt="producto.categoria" 
+          />
+          <span class="text-[10px] font-black uppercase tracking-wider">
+            {{ producto.categoria }}
+          </span>
+        </div>
 
         <!-- Contenedor Blanco para la Imagen -->
         <div class="w-full bg-gray-50 rounded-2xl p-4 flex items-center justify-center border border-gray-100 mb-4 h-64 shadow-inner overflow-hidden relative">
@@ -130,27 +142,35 @@
             <h3 class="text-xl font-black text-gray-800 my-1 line-clamp-1" :title="producto.nombre">
               {{ producto.nombre }}
             </h3>
-            <p class="text-xs font-semibold text-gray-400 mb-3 font-mono">Cód: {{ producto.codigo }}</p>
+            <p class="text-xs font-semibold text-gray-400 mb-2 font-mono">Cód: {{ producto.codigo }}</p>
             
-            <!-- Selectores Desplegables de Talla y Color -->
+            <!-- Selectores Desplegables de Talla y Color DINÁMICOS -->
             <div class="flex justify-center gap-3 my-3">
-              <select class="bg-gray-50 text-gray-700 text-xs font-bold px-3 py-1.5 rounded-full border border-gray-200 outline-none cursor-pointer hover:bg-gray-100 focus:ring-2 focus:ring-green-600">
-                <option value="">Talla ∨</option>
-                <option value="S">Talla S</option>
-                <option value="M">Talla M</option>
-                <option value="L">Talla L</option>
-                <option value="XL">Talla XL</option>
-                <option value="UNICA">Talla Única</option>
-              </select>
+              <!-- Selector Dinámico de Talla -->
+              <div class="flex flex-col items-center">
+                <span class="text-[9px] font-black text-gray-400 uppercase tracking-wider mb-0.5">Talla</span>
+                <select 
+                  v-model="seleccionesTalla[producto.id]" 
+                  class="bg-gray-50 text-gray-800 text-xs font-bold px-3 py-1 rounded-full border border-gray-200 outline-none cursor-pointer hover:bg-gray-100 focus:ring-2 focus:ring-[#6b4e8b] shadow-sm"
+                >
+                  <option v-for="t in obtenerListaTallas(producto)" :key="t" :value="t">
+                    {{ t }}
+                  </option>
+                </select>
+              </div>
 
-              <select class="bg-gray-50 text-gray-700 text-xs font-bold px-3 py-1.5 rounded-full border border-gray-200 outline-none cursor-pointer hover:bg-gray-100 focus:ring-2 focus:ring-green-600">
-                <option value="">Color ∨</option>
-                <option value="negro">Negro</option>
-                <option value="blanco">Blanco</option>
-                <option value="gris">Gris</option>
-                <option value="azul">Azul</option>
-                <option value="original">Original</option>
-              </select>
+              <!-- Selector Dinámico de Color -->
+              <div class="flex flex-col items-center">
+                <span class="text-[9px] font-black text-gray-400 uppercase tracking-wider mb-0.5">Color</span>
+                <select 
+                  v-model="seleccionesColor[producto.id]" 
+                  class="bg-gray-50 text-gray-800 text-xs font-bold px-3 py-1 rounded-full border border-gray-200 outline-none cursor-pointer hover:bg-gray-100 focus:ring-2 focus:ring-[#6b4e8b] shadow-sm"
+                >
+                  <option v-for="c in obtenerListaColores(producto)" :key="c" :value="c">
+                    {{ c }}
+                  </option>
+                </select>
+              </div>
             </div>
           </div>
 
@@ -162,7 +182,7 @@
 
             <!-- Botón de Compra -->
             <button 
-              @click="props.onAgregar(producto)" 
+              @click="agregarConVariantes(producto)" 
               class="w-full bg-[#6b4e8b] hover:bg-[#5a3f75] text-white font-bold py-3 px-4 rounded-xl shadow-md transition-all active:scale-95 text-xs tracking-wide uppercase cursor-pointer flex items-center justify-center gap-2"
             >
               <span>🛒</span> Agregar al Carrito
@@ -178,7 +198,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
-import { obtenerImagenProducto, imagenPorDefecto } from '../utils/imagenes.js';
+import { obtenerImagenProducto, obtenerLogoMarca, imagenPorDefecto } from '../utils/imagenes.js';
 
 const props = defineProps({
   onAgregar: {
@@ -207,6 +227,10 @@ const listaProductos = ref([]);
 const marcaSeleccionada = ref(props.marcaFiltroInicial || 'Todas');
 const terminoBusqueda = ref('');
 const ordenPrecio = ref('defecto');
+
+// Mapas de selección reactiva de talla y color por producto
+const seleccionesTalla = ref({});
+const seleccionesColor = ref({});
 
 // Escuchar cambios en la propiedad marcaFiltroInicial si proviene de App.vue
 watch(() => props.marcaFiltroInicial, (nuevaMarca) => {
@@ -257,6 +281,57 @@ const productosFiltrados = computed(() => {
   return resultado;
 });
 
+// Obtener lista dinámica de tallas según el producto
+const obtenerListaTallas = (prod) => {
+  if (prod.tallas && String(prod.tallas).trim()) {
+    return String(prod.tallas).split(',').map(t => t.trim()).filter(Boolean);
+  }
+  const nom = (prod.nombre || '').toLowerCase();
+  if (nom.includes('tenis') || nom.includes('calzado') || (prod.categoria || '').toLowerCase().includes('puma') && nom.includes('suede')) {
+    return ['37', '38', '39', '40', '41', '42'];
+  }
+  if (nom.includes('gorra') || nom.includes('reloj') || nom.includes('morral') || nom.includes('mochila') || nom.includes('splash') || nom.includes('locion') || nom.includes('crema') || nom.includes('termo') || nom.includes('cinturon') || nom.includes('rinonera') || nom.includes('billetera')) {
+    return ['UNICA'];
+  }
+  return ['S', 'M', 'L', 'XL'];
+};
+
+// Obtener lista dinámica de colores según el producto
+const obtenerListaColores = (prod) => {
+  if (prod.colores && String(prod.colores).trim()) {
+    return String(prod.colores).split(',').map(c => c.trim()).filter(Boolean);
+  }
+  return ['Negro', 'Blanco', 'Gris', 'Original'];
+};
+
+// Inicializar selecciones por defecto cuando cargan los productos
+const inicializarSelecciones = () => {
+  listaProductos.value.forEach(p => {
+    if (!seleccionesTalla.value[p.id]) {
+      const tallas = obtenerListaTallas(p);
+      seleccionesTalla.value[p.id] = tallas[0] || 'M';
+    }
+    if (!seleccionesColor.value[p.id]) {
+      const colores = obtenerListaColores(p);
+      seleccionesColor.value[p.id] = colores[0] || 'Negro';
+    }
+  });
+};
+
+// Agregar al carrito con talla y color específicos seleccionados
+const agregarConVariantes = (producto) => {
+  const tallas = obtenerListaTallas(producto);
+  const colores = obtenerListaColores(producto);
+  const tallaElegida = seleccionesTalla.value[producto.id] || tallas[0] || 'M';
+  const colorElegido = seleccionesColor.value[producto.id] || colores[0] || 'Original';
+
+  props.onAgregar({
+    ...producto,
+    tallaSeleccionada: tallaElegida,
+    colorSeleccionado: colorElegido
+  });
+};
+
 // Selección de marca
 const seleccionarMarca = (marca) => {
   marcaSeleccionada.value = marca;
@@ -267,20 +342,6 @@ const restablecerFiltros = () => {
   marcaSeleccionada.value = 'Todas';
   terminoBusqueda.value = '';
   ordenPrecio.value = 'defecto';
-};
-
-// Colores personalizados de Badge según marca
-const obtenerColorBadge = (categoria) => {
-  const cat = (categoria || '').toLowerCase();
-  switch (cat) {
-    case 'oakley': return 'bg-gray-900 text-white';
-    case 'adidas': return 'bg-black text-white border border-cyan-400';
-    case 'victoria secret': return 'bg-pink-100 text-pink-800 border border-pink-300';
-    case 'puma': return 'bg-amber-600 text-white';
-    case 'polo': return 'bg-blue-900 text-amber-200 border border-amber-300';
-    case 'varios': return 'bg-teal-700 text-white';
-    default: return 'bg-purple-100 text-purple-900';
-  }
 };
 
 // Fallback si la imagen no carga
@@ -294,6 +355,7 @@ const cargarProductos = async () => {
     const respuesta = await fetch('http://localhost:8080/servidor_nana/productos');
     if (respuesta.ok) {
       listaProductos.value = await respuesta.json();
+      inicializarSelecciones();
     }
   } catch (error) {
     console.error("Error conectando al catálogo:", error);

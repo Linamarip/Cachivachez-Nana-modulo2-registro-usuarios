@@ -15,26 +15,24 @@
           
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mb-4">
             <div class="bg-[#8fa15b]/10 p-4 rounded-2xl border border-[#8fa15b]/20">
-              <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Número de Pedido</p>
-              <p class="text-base font-black text-gray-800 mt-1"># P2026-05-25</p>
+              <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Secuencia del Pedido</p>
+              <p class="text-base font-black text-purple-900 mt-1 font-mono">{{ proximoNumeroPedido }}</p>
             </div>
             
             <div class="bg-[#8fa15b]/10 p-4 rounded-2xl border border-[#8fa15b]/20">
               <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Valor Productos</p>
-              <!-- Quitamos la barra invertida de aquí -->
-              <p class="text-base font-black text-gray-700 mt-1">\${{ (totalPedido - 15000).toLocaleString('es-CO') }}</p>
+              <p class="text-base font-black text-gray-700 mt-1">${{ Math.max(0, totalPedido - 15000).toLocaleString('es-CO') }}</p>
             </div>
 
             <div class="bg-[#8fa15b]/10 p-4 rounded-2xl border border-[#8fa15b]/20">
               <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Costo de Envío</p>
-              <!-- Quitamos la barra invertida de aquí -->
-              <p class="text-base font-black text-gray-700 mt-1">\$15.000</p>
+              <p class="text-base font-black text-gray-700 mt-1">$15.000</p>
             </div>
           </div>
 
           <div class="w-full bg-gray-50 rounded-2xl p-4 border border-gray-100 flex justify-between items-center px-6">
             <span class="text-sm font-bold text-gray-500 uppercase tracking-wider">Total Neto a Pagar:</span>
-            <span class="text-2xl font-black text-[#6b4e8b]">\${{ totalPedido.toLocaleString('es-CO') }}</span>
+            <span class="text-2xl font-black text-[#6b4e8b]">${{ totalPedido.toLocaleString('es-CO') }}</span>
           </div>
         </div>
 
@@ -46,7 +44,7 @@
             <button 
               type="button"
               @click="metodoSeleccionado = 'Contraentrega'"
-              :class="metodoSeleccionado === 'Contraentrega' ? 'border-[#6b4e8b] bg-[#6b4e8b]/10' : 'border-gray-200 bg-gray-50 hover:bg-gray-100'"
+              :class="metodoSeleccionado === 'Contraentrega' ? 'border-[#6b4e8b] bg-[#6b4e8b]/10 shadow-md' : 'border-gray-200 bg-gray-50 hover:bg-gray-100'"
               class="flex flex-col items-center justify-center p-6 rounded-2xl border-2 transition-all active:scale-95 cursor-pointer"
             >
               <span class="text-3xl mb-2">💵</span>
@@ -57,7 +55,7 @@
             <button 
               type="button"
               @click="metodoSeleccionado = 'Transferencia'"
-              :class="metodoSeleccionado === 'Transferencia' ? 'border-[#6b4e8b] bg-[#6b4e8b]/10' : 'border-gray-200 bg-gray-50 hover:bg-gray-100'"
+              :class="metodoSeleccionado === 'Transferencia' ? 'border-[#6b4e8b] bg-[#6b4e8b]/10 shadow-md' : 'border-gray-200 bg-gray-50 hover:bg-gray-100'"
               class="flex flex-col items-center justify-center p-6 rounded-2xl border-2 transition-all active:scale-95 cursor-pointer"
             >
               <span class="text-3xl mb-2">📲</span>
@@ -67,7 +65,7 @@
           </div>
 
           <div v-if="metodoSeleccionado" class="mt-6 p-4 bg-gray-50 rounded-2xl border border-gray-100 text-sm font-medium text-gray-600">
-            <p v-if="metodoSeleccionado === 'Contraentrega'">👉 Recuerda tener el dinero en efectivo exacto listo cuando llegue la transportadora.</p>
+            <p v-if="metodoSeleccionado === 'Contraentrega'">👉 Recuerda tener el dinero en efectivo exacto listo cuando llegue la transportadora Coordinadora Mercantil.</p>
             <p v-else>👉 Al confirmar la orden, el sistema te mostrará las cuentas autorizadas para subir el soporte de tu pago.</p>
           </div>
         </div>
@@ -94,7 +92,7 @@
             <input v-model="direccionEnvio.nomenclatura" type="text" placeholder="Dirección y bloque" class="p-2 border rounded-lg text-xs w-full bg-white outline-none" />
             <input v-model="direccionEnvio.ciudad" type="text" placeholder="Ciudad" class="p-2 border rounded-lg text-xs w-full bg-white outline-none" />
             <input v-model="direccionEnvio.departamento" type="text" placeholder="Departamento" class="p-2 border rounded-lg text-xs w-full bg-white outline-none" />
-            <button type="button" @click="editandoDireccion = false" class="bg-[#8fa15b] text-white text-xs font-bold py-1.5 rounded-lg mt-1 hover:bg-[#7a8c4e]">Guardar Dirección 💾</button>
+            <button type="button" @click="editandoDireccion = false" class="bg-[#8fa15b] text-white text-xs font-bold py-1.5 rounded-lg mt-1 hover:bg-[#7a8c4e] cursor-pointer">Guardar Dirección 💾</button>
           </div>
         </div>
 
@@ -102,7 +100,7 @@
           <div>
             <h3 class="text-xl font-extrabold text-gray-800 mb-3">Finalizar Orden</h3>
             <p class="text-xs text-gray-500 leading-relaxed mb-4">
-              Al confirmar, se guardará el pedido con la dirección especificada. Su estado pasará al sistema de control de despachos de la tienda.
+              Al confirmar, se generará el número de pedido único bajo la secuencia oficial (#año-mes-consecutivo) y podrás rastrear el envío en tiempo real.
             </p>
           </div>
 
@@ -112,7 +110,7 @@
             :disabled="!metodoSeleccionado || editandoDireccion" 
             class="w-full bg-[#6b4e8b] hover:bg-[#5a3f75] disabled:bg-gray-300 text-white font-bold py-4 px-4 rounded-xl shadow-md transition-all active:scale-95 text-sm tracking-wide uppercase cursor-pointer"
           >
-            Confirmar Pedido
+            Confirmar Pedido 🚀
           </button>
         </div>
       </div>
@@ -122,8 +120,7 @@
     <div v-if="mostrarModalTransferencia" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
       <div class="bg-white rounded-[2rem] max-w-lg w-full p-6 shadow-2xl text-left border border-gray-100">
         <h3 class="text-2xl font-black text-gray-800 mb-2 flex items-center gap-2">Soporte de Transferencia</h3>
-        <!-- Quitamos la barra invertida de aquí -->
-        <p class="text-xs text-gray-500 mb-4">Realiza tu pago por el valor exacto de <span class="font-bold text-[#6b4e8b]">\${{ totalPedido.toLocaleString('es-CO') }}</span> y sube el pantallazo abajo.</p>
+        <p class="text-xs text-gray-500 mb-4">Realiza tu pago por el valor exacto de <span class="font-bold text-[#6b4e8b]">${{ totalPedido.toLocaleString('es-CO') }}</span> y sube el comprobante:</p>
         
         <!-- Datos Bancarios Simulados -->
         <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 flex flex-col gap-2 text-sm text-gray-700 font-semibold mb-5">
@@ -142,13 +139,11 @@
             class="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-[#6b4e8b]/10 file:text-[#6b4e8b] file:hover:bg-[#6b4e8b]/20 cursor-pointer text-xs text-gray-500"
           />
           
-          <!-- Vista previa estática -->
           <div v-if="vistaPreviaImagen" class="mt-3 w-full h-32 bg-gray-100 rounded-xl border border-dashed border-gray-300 overflow-hidden flex items-center justify-center p-2">
             <img :src="vistaPreviaImagen" class="max-h-full max-w-full object-contain rounded-lg shadow-sm" />
           </div>
         </div>
 
-                <!-- Botones de Acción del Modal -->
         <div class="flex gap-3 justify-end">
           <button type="button" @click="mostrarModalTransferencia = false" class="px-5 py-2.5 rounded-xl border border-gray-200 text-sm font-bold text-gray-500 hover:bg-gray-50 cursor-pointer">Cancelar</button>
           <button 
@@ -163,24 +158,30 @@
       </div>
     </div>
   </div>
-</template> <!-- <-- AQUÍ SE CIERRA EL TEMPLATE QUE FALTABA -->
+</template>
 
 <script setup>
-import { ref, onMounted, defineProps } from 'vue';
+import { ref, onMounted } from 'vue';
 
 const props = defineProps({
   totalPedido: {
     type: Number,
     default: 105000 
   },
-  onConfirmarPedido: Function
+  onConfirmarPedido: {
+    type: Function,
+    default: () => {}
+  }
 });
 
 const metodoSeleccionado = ref('');
 const editandoDireccion = ref(false);
 
 const mostrarModalTransferencia = ref(false); 
-const vistaPreviaImagen = ref(null);         
+const vistaPreviaImagen = ref(null);
+
+const now = new Date();
+const proximoNumeroPedido = ref(`#${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-SECUENCIAL`);
 
 const direccionEnvio = ref({
   destinatario: localStorage.getItem('usuarioNombre') || 'Mercedes Calpa',
@@ -204,8 +205,9 @@ const manejarConfirmacionBoton = () => {
   if (metodoSeleccionado.value === 'Transferencia') {
     mostrarModalTransferencia.value = true;
   } else {
-    alert(`¡Pedido confirmado por Pago Contraentrega!\nEnvío listo hacia ${direccionEnvio.value.ciudad}.`);
-    if (props.onConfirmarPedido) props.onConfirmarPedido('Contraentrega');
+    if (props.onConfirmarPedido) {
+      props.onConfirmarPedido('Contraentrega');
+    }
   }
 };
 
@@ -217,12 +219,11 @@ const manejarCargaImagen = (evento) => {
 };
 
 const enviarComprobanteFinal = () => {
-  alert(`¡Comprobante recibido de forma exitosa!\nAsesores de Cachivaches NANA verificarán el ingreso en Bancolombia/Nequi.`);
   mostrarModalTransferencia.value = false;
   vistaPreviaImagen.value = null;
   
   if (props.onConfirmarPedido) {
-    props.onConfirmarPedido('Transferencia (Verificación Pendiente)');
+    props.onConfirmarPedido('Transferencia');
   }
 };
 </script>

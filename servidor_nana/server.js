@@ -63,7 +63,6 @@ app.post('/servidor_nana/login', (req, res) => {
 app.post('/servidor_nana/registro', (req, res) => {
     const datos = req.body;
     
-    // Captura flexible por si Vue envía las variables con variaciones de nombre
     const nombre = datos.nombre;
     const apellido = datos.apellido;
     const cedula = datos.cedula;
@@ -73,7 +72,6 @@ app.post('/servidor_nana/registro', (req, res) => {
     const direccion = datos.direccion;
     const ciudad = datos.ciudad;
     const departamento = datos.departamento;
-    // Captura de contraseña real introducida por el usuario
     const contrasenia = datos.contrasenia || datos.contrasena || datos.password || '123456';
 
     const sql = `INSERT INTO usuarios 
@@ -108,14 +106,13 @@ app.post('/servidor_nana/registro', (req, res) => {
 // RUTA 3: OBTENER TODOS LOS USUARIOS (CRUD: Consulta)
 // ==========================================
 app.get('/servidor_nana/usuarios', (req, res) => {
-    const sql = 'SELECT * FROM usuarios';
+    const sql = 'SELECT * FROM usuarios ORDER BY id DESC';
     db.query(sql, (err, results) => {
         if (err) {
             console.error('❌ Error al consultar usuarios:', err.message);
             return res.status(500).json({ error: err.message });
         }
         
-        // Mapeamos los resultados para asegurar compatibilidad total con la tabla de Vue 3
         const usuariosFormateados = results.map(user => ({
             id: user.id || user.id_usuario, 
             nombre: user.nombre,
@@ -136,14 +133,15 @@ app.get('/servidor_nana/usuarios', (req, res) => {
 app.delete('/servidor_nana/usuarios/:id', (req, res) => {
     const { id } = req.params;
     
-    // Intenta borrar buscando por 'id' o por 'id_usuario' de manera inteligente
-    const sql = 'DELETE FROM usuarios WHERE id = ? OR id_usuario = ?';
-    db.query(sql, [id, id], (err, result) => {
+    // Eliminación limpia usando exclusivamente el id de la tabla usuarios
+    const sql = 'DELETE FROM usuarios WHERE id = ?';
+    db.query(sql, [id], (err, result) => {
         if (err) {
             console.error('❌ Error al eliminar usuario:', err.message);
             return res.status(500).json({ error: err.message });
         }
-        res.json({ mensaje: 'Usuario eliminado exitosamente' });
+        console.log(`✅ Usuario #${id} eliminado con éxito de MySQL`);
+        res.json({ mensaje: 'Usuario eliminado exitosamente de la base de datos' });
     });
 });
 
@@ -154,38 +152,38 @@ app.get('/servidor_nana/productos', (req, res) => {
     const sql = 'SELECT * FROM productos ORDER BY id ASC';
     db.query(sql, (err, results) => {
         if (err) {
-            const productosSimulados = [
-                { id: 1, codigo: '001', nombre: 'Buso', categoria: 'Oakley', precio: 190000, imagen_url: 'buso.jpg' },
-                { id: 2, codigo: '002', nombre: 'Camiseta', categoria: 'Oakley', precio: 90000, imagen_url: 'camiseta.jpg' },
-                { id: 3, codigo: '003', nombre: 'Pantalón', categoria: 'Oakley', precio: 250000, imagen_url: 'pantalon.jpg' }
-            ];
-            return res.json(productosSimulados);
+            console.error('❌ Error consultando productos:', err.message);
+            return res.status(500).json({ error: err.message });
         }
         res.json(results);
     });
 });
 
-// --- RUTA: AGREGAR O ACTUALIZAR PRODUCTO (ADMIN: UPSERT SEGURO) ---
+// --- RUTA: AGREGAR O ACTUALIZAR PRODUCTO (ADMIN: UPSERT SEGURO CON TALLAS Y COLORES) ---
 app.post('/servidor_nana/productos', (req, res) => {
-    const { codigo, nombre, categoria, precio, imagen_url } = req.body;
+    const { codigo, nombre, categoria, precio, imagen_url, tallas, colores } = req.body;
     
-    // Si la referencia/código ya existe, actualiza los campos; si no existe, la crea (UPSERT)
+    const tallasFinal = tallas && String(tallas).trim() ? String(tallas).trim() : 'S, M, L, XL';
+    const coloresFinal = colores && String(colores).trim() ? String(colores).trim() : 'Negro, Blanco, Gris';
+    
     const sql = `
-        INSERT INTO productos (codigo, nombre, categoria, precio, imagen_url) 
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO productos (codigo, nombre, categoria, precio, imagen_url, tallas, colores) 
+        VALUES (?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE 
             nombre = VALUES(nombre), 
             categoria = VALUES(categoria), 
             precio = VALUES(precio), 
-            imagen_url = VALUES(imagen_url)
+            imagen_url = VALUES(imagen_url),
+            tallas = VALUES(tallas),
+            colores = VALUES(colores)
     `;
 
-    db.query(sql, [codigo, nombre, categoria, precio, imagen_url || 'camiseta.jpg'], (err, result) => {
+    db.query(sql, [codigo, nombre, categoria, precio, imagen_url || 'camiseta.jpg', tallasFinal, coloresFinal], (err, result) => {
         if (err) {
             console.error('❌ Error registrando/actualizando producto:', err.message);
             return res.status(500).json({ error: err.message });
         }
-        console.log(`✅ Producto procesado correctamente en MySQL: ${codigo} - ${nombre}`);
+        console.log(`✅ Producto procesado en MySQL: ${codigo} - ${nombre} (Tallas: ${tallasFinal}, Colores: ${coloresFinal})`);
         res.json({ 
             mensaje: 'Prenda registrada y actualizada exitosamente en el catálogo de MySQL', 
             id: result.insertId || 'actualizado',
@@ -194,12 +192,16 @@ app.post('/servidor_nana/productos', (req, res) => {
     });
 });
 
-// --- RUTA: ACTUALIZAR / EDITAR PRODUCTO O CAMBIAR IMAGEN (ADMIN) ---
+// --- RUTA: ACTUALIZAR / EDITAR PRODUCTO O CAMBIAR IMAGEN/TALLAS/COLORES (ADMIN) ---
 app.put('/servidor_nana/productos/:id', (req, res) => {
     const { id } = req.params;
-    const { codigo, nombre, categoria, precio, imagen_url } = req.body;
-    const sql = 'UPDATE productos SET codigo = ?, nombre = ?, categoria = ?, precio = ?, imagen_url = ? WHERE id = ?';
-    db.query(sql, [codigo, nombre, categoria, precio, imagen_url || 'camiseta.jpg', id], (err, result) => {
+    const { codigo, nombre, categoria, precio, imagen_url, tallas, colores } = req.body;
+    
+    const tallasFinal = tallas && String(tallas).trim() ? String(tallas).trim() : 'S, M, L, XL';
+    const coloresFinal = colores && String(colores).trim() ? String(colores).trim() : 'Negro, Blanco, Gris';
+
+    const sql = 'UPDATE productos SET codigo = ?, nombre = ?, categoria = ?, precio = ?, imagen_url = ?, tallas = ?, colores = ? WHERE id = ?';
+    db.query(sql, [codigo, nombre, categoria, precio, imagen_url || 'camiseta.jpg', tallasFinal, coloresFinal, id], (err, result) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ mensaje: 'Producto actualizado con éxito en la base de datos' });
     });
@@ -216,10 +218,104 @@ app.delete('/servidor_nana/productos/:id', (req, res) => {
 });
 
 // ====================================================================
+// 🚚 MÓDULO DE PEDIDOS Y SEGUIMIENTO EN TIEMPO REAL
+// ====================================================================
+
+// --- RUTA 6: CREAR PEDIDO CON NÚMERO SECUENCIAL #YYYY-MM-XXXXX ---
+app.post('/servidor_nana/pedidos', (req, res) => {
+    const { usuario_email, usuario_nombre, direccion_envio, ciudad, departamento, metodo_pago, total, items } = req.body;
+    
+    const now = new Date();
+    const anio = now.getFullYear();
+    const mes = String(now.getMonth() + 1).padStart(2, '0');
+    
+    // Contar pedidos existentes en el año y mes para generar el consecutivo de 5 dígitos
+    const sqlCount = 'SELECT COUNT(*) AS total FROM pedidos WHERE YEAR(fecha_creacion) = ? AND MONTH(fecha_creacion) = ?';
+    
+    db.query(sqlCount, [anio, now.getMonth() + 1], (errCount, countResults) => {
+        const totalMes = (countResults && countResults[0] ? countResults[0].total : 0) + 1;
+        const consecutivo = String(totalMes).padStart(5, '0');
+        const numeroPedido = `#${anio}-${mes}-${consecutivo}`;
+        
+        // Número de guía aleatorio pero realista de la transportadora
+        const guiaAleatoria = 'CO-' + Math.floor(100000000 + Math.random() * 900000000);
+        const transportadora = 'Coordinadora Mercantil';
+        const itemsJson = typeof items === 'string' ? items : JSON.stringify(items || []);
+
+        const sqlInsert = `
+            INSERT INTO pedidos 
+            (numero_pedido, usuario_email, usuario_nombre, direccion_envio, ciudad, departamento, metodo_pago, total, estado, guia_despacho, transportadora, items) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+
+        const valores = [
+            numeroPedido, 
+            usuario_email, 
+            usuario_nombre || 'Cliente', 
+            direccion_envio || 'Dirección no especificada', 
+            ciudad || 'Bello', 
+            departamento || 'Antioquia', 
+            metodo_pago || 'Contraentrega', 
+            total || 0, 
+            'En camino', 
+            guiaAleatoria, 
+            transportadora, 
+            itemsJson
+        ];
+
+        db.query(sqlInsert, valores, (errInsert, result) => {
+            if (errInsert) {
+                console.error('❌ Error creando pedido:', errInsert.message);
+                return res.status(500).json({ error: errInsert.message });
+            }
+
+            console.log(`✅ Pedido ${numeroPedido} registrado con éxito para ${usuario_email}`);
+            res.json({
+                mensaje: 'Pedido generado exitosamente',
+                id: result.insertId,
+                numero_pedido: numeroPedido,
+                guia_despacho: guiaAleatoria,
+                transportadora: transportadora,
+                estado: 'En camino'
+            });
+        });
+    });
+});
+
+// --- RUTA 7: OBTENER TODOS LOS PEDIDOS (ADMIN) ---
+app.get('/servidor_nana/pedidos', (req, res) => {
+    const sql = 'SELECT * FROM pedidos ORDER BY id DESC';
+    db.query(sql, (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(results);
+    });
+});
+
+// --- RUTA 8: OBTENER PEDIDOS POR EMAIL DE USUARIO (CLIENTE) ---
+app.get('/servidor_nana/pedidos/usuario/:email', (req, res) => {
+    const { email } = req.params;
+    const sql = 'SELECT * FROM pedidos WHERE usuario_email = ? ORDER BY id DESC';
+    db.query(sql, [email], (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(results);
+    });
+});
+
+// --- RUTA 9: ACTUALIZAR ESTADO DEL PEDIDO (ENTREGADO / EN CAMINO) ---
+app.put('/servidor_nana/pedidos/estado', (req, res) => {
+    const { numero_pedido, id, estado } = req.body;
+    const sql = 'UPDATE pedidos SET estado = ? WHERE numero_pedido = ? OR id = ?';
+    db.query(sql, [estado || 'Entregado', numero_pedido, id], (err, result) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ mensaje: `Estado del pedido ${numero_pedido || id} actualizado a: ${estado}` });
+    });
+});
+
+// ====================================================================
 // 📲 NUEVAS RUTAS: MÓDULO DE CALIFICACIONES Y OPINIONES
 // ====================================================================
 
-// --- RUTA 6: AGREGAR CALIFICACIÓN (Inserción CRUD) ---
+// --- RUTA 10: AGREGAR CALIFICACIÓN (Inserción CRUD) ---
 app.post('/servidor_nana/calificaciones', (req, res) => {
     const { nombre, comentario, estrellas } = req.body;
     const sql = 'INSERT INTO calificaciones (nombre_usuario, comentario, estrellas) VALUES (?, ?, ?)';
@@ -229,7 +325,7 @@ app.post('/servidor_nana/calificaciones', (req, res) => {
     });
 });
 
-// --- RUTA 7: OBTENER CALIFICACIONES (Consulta CRUD) ---
+// --- RUTA 11: OBTENER CALIFICACIONES (Consulta CRUD) ---
 app.get('/servidor_nana/calificaciones', (req, res) => {
     const sql = 'SELECT * FROM calificaciones ORDER BY creado_en DESC';
     db.query(sql, (err, results) => {

@@ -31,10 +31,10 @@
         <!-- Tarjeta de Producto en el Carrito -->
         <div 
           v-for="item in items" 
-          :key="item.id" 
+          :key="item.id + (item.tallaSeleccionada || '') + (item.colorSeleccionado || '')" 
           class="bg-white rounded-3xl p-4 shadow-xl flex items-center justify-between border border-gray-100 hover:shadow-2xl transition-all"
         >
-          <!-- Imagen del Producto con mapeo exacto de Tenis y demás prendas -->
+          <!-- Imagen del Producto -->
           <div class="w-24 h-24 bg-gray-50 rounded-2xl p-2 flex items-center justify-center border border-gray-100 shadow-inner shrink-0 overflow-hidden">
             <img 
               :src="obtenerImagenProducto(item.imagen_url || item.nombre, item.categoria)" 
@@ -44,14 +44,25 @@
             />
           </div>
 
-          <!-- Detalles del Producto -->
+          <!-- Detalles del Producto con Talla y Color Dinámicos -->
           <div class="flex-grow px-4 text-left">
             <span class="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-900">
-              {{ item.categoria || 'Oakley' }}
+              {{ item.categoria || 'Multimarca' }}
             </span>
             <h3 class="text-base sm:text-lg font-extrabold text-gray-800 mt-1 leading-snug">{{ item.nombre }}</h3>
             <p class="text-xs text-gray-400 font-mono">Cód: {{ item.codigo || 'REF-' + item.id }}</p>
-            <p class="text-lg font-black text-[#6b4e8b] mt-1">${{ Number(item.precio).toLocaleString('es-CO') }} COP</p>
+            
+            <!-- Talla y Color Seleccionados de forma dinámica -->
+            <div class="flex items-center gap-2 mt-1.5 flex-wrap">
+              <span class="bg-gray-100 text-gray-700 text-[10px] font-bold px-2 py-0.5 rounded-md border border-gray-200">
+                Talla: <strong>{{ item.tallaSeleccionada || 'M' }}</strong>
+              </span>
+              <span class="bg-gray-100 text-gray-700 text-[10px] font-bold px-2 py-0.5 rounded-md border border-gray-200">
+                Color: <strong>{{ item.colorSeleccionado || 'Original' }}</strong>
+              </span>
+            </div>
+
+            <p class="text-lg font-black text-[#6b4e8b] mt-1.5">${{ Number(item.precio).toLocaleString('es-CO') }} COP</p>
           </div>
 
           <!-- Controles de Cantidad (+ / -) -->
@@ -78,7 +89,7 @@
           <!-- Botón de Eliminar (Basura 🗑️) -->
           <button 
             type="button"
-            @click="eliminarItem(item.id)" 
+            @click="eliminarItem(item.id, item.tallaSeleccionada, item.colorSeleccionado)" 
             class="text-red-500 hover:text-red-700 text-xl ml-3 p-2 cursor-pointer transition-transform active:scale-90"
             title="Eliminar del carrito"
           >
@@ -91,17 +102,35 @@
       <!-- COLUMNA DERECHA: DIRECCIÓN REAL DEL USUARIO Y RESUMEN DE TOTALES -->
       <div class="flex flex-col gap-6 text-left">
         
-        <!-- Cuadro de Dirección Dinámico (Vinculado a los datos de la sesión del usuario) -->
+        <!-- Cuadro de Dirección Dinámico (Requiere Inicio de Sesión) -->
         <div class="bg-white rounded-3xl p-5 shadow-xl border border-gray-100">
           <h3 class="text-lg font-black text-gray-800 mb-3 flex items-center gap-2">
             <span>📍</span> Dirección de Envío
           </h3>
           
-          <div class="bg-[#8fa15b]/20 p-4 rounded-2xl border border-[#8fa15b]/30 mb-3">
+          <!-- Si el cliente ha iniciado sesión -->
+          <div v-if="estaAutenticado" class="bg-[#8fa15b]/20 p-4 rounded-2xl border border-[#8fa15b]/30 mb-3">
             <p class="font-extrabold text-gray-900 text-sm">👤 Destinatario: {{ usuarioNombreActual }}</p>
-            <p class="text-xs text-gray-700 mt-1 font-medium">🏠 {{ usuarioDireccionActual }}</p>
-            <p class="text-xs text-purple-900 font-bold mt-0.5">📍 {{ usuarioCiudadActual }} - {{ usuarioDeptoActual }}</p>
+            <p class="text-xs text-gray-700 mt-1 font-medium">🏠 {{ usuarioDireccionActual || 'Cl. 12a #71c-60' }}</p>
+            <p class="text-xs text-purple-900 font-bold mt-0.5">📍 {{ usuarioCiudadActual || 'Pasto' }} - {{ usuarioDeptoActual || 'Nariño' }}</p>
             <p class="text-[11px] text-gray-500 mt-1">📧 {{ usuarioEmailActual }}</p>
+          </div>
+
+          <!-- Si el cliente NO ha iniciado sesión (Alerta y bloqueo de compra anónima) -->
+          <div v-else class="bg-amber-50 p-4 rounded-2xl border-2 border-amber-300 text-amber-900 mb-3 shadow-sm">
+            <p class="font-black text-xs flex items-center gap-1.5 text-amber-900">
+              <span>🔒</span> Inicio de sesión obligatorio
+            </p>
+            <p class="text-[11px] mt-1 text-amber-800 leading-snug">
+              Para garantizar el despacho seguro y la factura de tu pedido, debes iniciar sesión o registrarte.
+            </p>
+            <button 
+              type="button" 
+              @click="emit('solicitarLogin')" 
+              class="mt-3 w-full bg-[#6b4e8b] hover:bg-[#5a3f75] text-white text-xs font-bold py-2.5 rounded-xl shadow-md cursor-pointer transition-all active:scale-95 flex items-center justify-center gap-1.5"
+            >
+              <span>🔑</span> Iniciar Sesión / Registrarme
+            </button>
           </div>
 
           <!-- Botón de retorno al catálogo -->
@@ -137,14 +166,16 @@
             </div>
           </div>
 
-          <!-- Botón de Continuar al Pago -->
+          <!-- Botón de Continuar al Pago (Solo se activa si el usuario ha iniciado sesión) -->
           <button 
             type="button"
             @click="procesarDespachoYAvance" 
-            :disabled="items.length === 0" 
-            class="w-full bg-[#6b4e8b] hover:bg-[#5a3f75] disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-3.5 px-4 rounded-xl shadow-md transition-all active:scale-95 text-sm uppercase tracking-wide cursor-pointer mt-4 flex items-center justify-center gap-2"
+            :disabled="items.length === 0 || !estaAutenticado" 
+            :class="!estaAutenticado ? 'bg-gray-400 cursor-not-allowed opacity-80' : 'bg-[#6b4e8b] hover:bg-[#5a3f75] cursor-pointer active:scale-95 shadow-md'"
+            class="w-full text-white font-bold py-3.5 px-4 rounded-xl transition-all text-sm uppercase tracking-wide mt-4 flex items-center justify-center gap-2"
           >
-            <span>💳</span> Continuar al Pago
+            <span v-if="estaAutenticado">💳 Continuar al Pago</span>
+            <span v-else>🔒 Inicia Sesión para Comprar</span>
           </button>
         </div>
 
@@ -169,18 +200,29 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['regresarAlCatalogo']);
+const emit = defineEmits(['regresarAlCatalogo', 'solicitarLogin']);
 
 // Extracción reactiva de datos del usuario activo desde localStorage
-const usuarioNombreActual = computed(() => localStorage.getItem('usuarioNombre') || 'Mercedes Calpa');
-const usuarioEmailActual = computed(() => localStorage.getItem('usuarioEmail') || 'mercedes01@gmail.com');
-const usuarioDireccionActual = computed(() => localStorage.getItem('usuarioDireccion') || 'Cl. 12a #71c-60');
-const usuarioCiudadActual = computed(() => localStorage.getItem('usuarioCiudad') || 'Pasto');
-const usuarioDeptoActual = computed(() => localStorage.getItem('usuarioDepartamento') || 'Nariño');
+const usuarioEmailActual = computed(() => localStorage.getItem('usuarioEmail') || '');
+const usuarioNombreActual = computed(() => localStorage.getItem('usuarioNombre') || '');
+const usuarioDireccionActual = computed(() => localStorage.getItem('usuarioDireccion') || '');
+const usuarioCiudadActual = computed(() => localStorage.getItem('usuarioCiudad') || '');
+const usuarioDeptoActual = computed(() => localStorage.getItem('usuarioDepartamento') || '');
+
+// Comprobar autenticación real: solo se puede ordenar si ha iniciado sesión
+const estaAutenticado = computed(() => {
+  return !!usuarioEmailActual.value && usuarioEmailActual.value.trim().length > 0;
+});
 
 // Avanzar a la pantalla de pagos
 const procesarDespachoYAvance = () => {
-  const direccionFinal = `${usuarioDireccionActual.value}, ${usuarioCiudadActual.value} - ${usuarioDeptoActual.value}`;
+  if (!estaAutenticado.value) {
+    alert('🔒 Para realizar tu pedido debes iniciar sesión con tu cuenta registrada.');
+    emit('solicitarLogin');
+    return;
+  }
+
+  const direccionFinal = `${usuarioDireccionActual.value || 'Cl. 12a #71c-60'}, ${usuarioCiudadActual.value || 'Pasto'} - ${usuarioDeptoActual.value || 'Nariño'}`;
   localStorage.setItem('direccionPedidoActual', direccionFinal);
   
   if (props.onIrAPagar) {
@@ -209,8 +251,12 @@ const disminuirCantidad = (item) => {
   }
 };
 
-const eliminarItem = (id) => {
-  const index = props.items.findIndex(item => item.id === id);
+const eliminarItem = (id, talla, color) => {
+  const index = props.items.findIndex(item => 
+    item.id === id && 
+    (item.tallaSeleccionada || '') === (talla || '') && 
+    (item.colorSeleccionado || '') === (color || '')
+  );
   if (index !== -1) {
     props.items.splice(index, 1);
   }

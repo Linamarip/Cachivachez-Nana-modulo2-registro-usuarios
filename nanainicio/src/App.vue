@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
+import { obtenerLogoMarca } from './utils/imagenes.js';
 
 // Importación de todos los componentes modulares del sistema
 import nana_registro from './components/nana_registro.vue';
@@ -14,12 +15,18 @@ import nana_acerca from './components/nana_acerca.vue';
 // Estado de navegación global
 const pantallaActual = ref('inicio');
 
-// Variables reactivas de autenticación
+// Variables reactivas de autenticación de clientes
 const email = ref('');
 const contrasenia = ref('');
 const mensajeError = ref('');
 const correoUsuarioActivo = ref('');
 const nombreUsuarioActivo = ref('');
+
+// Control de Acceso Exclusivo al Panel de Administrador
+const esAdminAutenticado = ref(false);
+const mostrarModalClaveAdmin = ref(false);
+const claveAdminInput = ref('');
+const errorClaveAdmin = ref('');
 
 // Búsqueda y Filtro de Marca desde la barra superior
 const textoBuscadorNav = ref('');
@@ -62,15 +69,25 @@ watch(carrito, (nuevoCarrito) => {
   localStorage.setItem('cachivaches_carrito', JSON.stringify(nuevoCarrito));
 }, { deep: true });
 
-// Agregar producto al carrito
-const agregarAlCarrito = (producto) => {
-  const existe = carrito.value.find(item => item.id === producto.id);
+// Agregar producto al carrito (incluyendo variantes de talla y color seleccionadas)
+const agregarAlCarrito = (productoConVariantes) => {
+  const existe = carrito.value.find(item => 
+    item.id === productoConVariantes.id && 
+    item.tallaSeleccionada === productoConVariantes.tallaSeleccionada &&
+    item.colorSeleccionado === productoConVariantes.colorSeleccionado
+  );
+
   if (existe) {
     existe.cantidad++;
   } else {
-    carrito.value.push({ ...producto, cantidad: 1 });
+    carrito.value.push({ 
+      ...productoConVariantes, 
+      cantidad: 1,
+      tallaSeleccionada: productoConVariantes.tallaSeleccionada || 'M',
+      colorSeleccionado: productoConVariantes.colorSeleccionado || 'Original'
+    });
   }
-  alert(`¡${producto.nombre} agregado al carrito de compras! 🛍️`);
+  alert(`¡${productoConVariantes.nombre} agregado al carrito! 🛍️\nTalla: ${productoConVariantes.tallaSeleccionada || 'M'} | Color: ${productoConVariantes.colorSeleccionado || 'Original'}`);
 };
 
 // Navegación rápida por marca desde la barra superior
@@ -82,6 +99,35 @@ const navegarAMarca = (nombreMarca) => {
 // Ejecutar búsqueda desde la barra superior
 const ejecutarBusquedaNav = () => {
   pantallaActual.value = 'productos';
+};
+
+// Acceso Seguro al Administrador (Solo Administradores)
+const intentarAccesoAdmin = () => {
+  if (esAdminAutenticado.value) {
+    pantallaActual.value = 'admin';
+  } else {
+    claveAdminInput.value = '';
+    errorClaveAdmin.value = '';
+    mostrarModalClaveAdmin.value = true;
+  }
+};
+
+const validarClaveAdmin = () => {
+  const clave = claveAdminInput.value.trim();
+  if (clave === 'admin123' || clave === 'NanaAdmin2026*' || clave === 'admin') {
+    esAdminAutenticado.value = true;
+    mostrarModalClaveAdmin.value = false;
+    pantallaActual.value = 'admin';
+    alert('¡Bienvenido al Panel Administrativo de Cachivaches NANA! ⚙️');
+  } else {
+    errorClaveAdmin.value = 'Contraseña incorrecta. Este módulo es exclusivo para administradores autorizados.';
+  }
+};
+
+const salirDeAdmin = () => {
+  esAdminAutenticado.value = false;
+  pantallaActual.value = 'inicio';
+  alert('Has salido del Panel Administrativo de forma segura.');
 };
 
 // Manejador de inicio de sesión con backend Node.js / MySQL
@@ -121,7 +167,6 @@ const manejarInicioSesion = async () => {
       localStorage.setItem('usuarioCiudad', userReal.ciudad || 'Pasto');
       localStorage.setItem('usuarioDepartamento', userReal.departamento || 'Nariño');
 
-      // Limpiar los inputs del formulario de login inmediatamente
       email.value = '';
       contrasenia.value = '';
       mensajeError.value = '';
@@ -139,16 +184,13 @@ const manejarInicioSesion = async () => {
 // Cierre de sesión seguro y limpieza total de memoria y almacenamiento local
 const cerrarSesion = () => {
   if (confirm('¿Deseas cerrar tu sesión actual de forma segura?')) {
-    // 1. Limpiar campos del formulario
     email.value = '';
     contrasenia.value = '';
     mensajeError.value = '';
 
-    // 2. Limpiar variables reactivas de usuario activo
     correoUsuarioActivo.value = '';
     nombreUsuarioActivo.value = '';
 
-    // 3. Limpiar almacenamiento local
     localStorage.removeItem('usuarioEmail');
     localStorage.removeItem('usuarioNombre');
     localStorage.removeItem('usuarioDireccion');
@@ -156,15 +198,45 @@ const cerrarSesion = () => {
     localStorage.removeItem('usuarioDepartamento');
     localStorage.removeItem('direccionPedidoActual');
 
-    // 4. Regresar a pantalla de inicio
     pantallaActual.value = 'inicio';
     alert('Sesión cerrada correctamente.');
   }
 };
 
-// Finalizar pedido desde la pasarela de pagos
-const finalizarPedido = (metodoPago) => {
-  alert(`Cachivaches NANA: Su pedido ha sido registrado con método: ${metodoPago}.`);
+// Finalizar pedido con número de orden secuencial #YYYY-MM-XXXXX
+const finalizarPedido = async (metodoPago) => {
+  try {
+    const direccionGuardada = localStorage.getItem('usuarioDireccion') || 'Cl. 12a #71c-60';
+    const ciudadGuardada = localStorage.getItem('usuarioCiudad') || 'Pasto';
+    const deptoGuardado = localStorage.getItem('usuarioDepartamento') || 'Nariño';
+
+    const respuesta = await fetch('http://localhost:8080/servidor_nana/pedidos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        usuario_email: correoUsuarioActivo.value || 'cliente@cachivacheznana.com',
+        usuario_nombre: nombreUsuarioActivo.value || 'Cliente NANA',
+        direccion_envio: direccionGuardada,
+        ciudad: ciudadGuardada,
+        departamento: deptoGuardado,
+        metodo_pago: metodoPago,
+        total: obtenerTotalCarrito(),
+        items: carrito.value
+      })
+    });
+
+    if (respuesta.ok) {
+      const data = await respuesta.json();
+      localStorage.setItem('ultimoPedidoNumero', data.numero_pedido);
+      alert(`🎉 ¡Compra exitosa!\n\nNúmero de Pedido generado: ${data.numero_pedido}\nMétodo: ${metodoPago}\nTransportadora: ${data.transportadora}\nGuía: ${data.guia_despacho}\n\nPuedes hacerle seguimiento en tiempo real en la pestaña Seguimiento.`);
+    } else {
+      alert(`Pedido confirmado con método: ${metodoPago}`);
+    }
+  } catch (err) {
+    console.error('Error registrando pedido:', err);
+    alert(`Pedido confirmado con método: ${metodoPago}`);
+  }
+
   carrito.value = [];
   localStorage.removeItem('cachivaches_carrito');
   pantallaActual.value = 'seguimiento'; 
@@ -199,7 +271,7 @@ const obtenerTotalCarrito = () => {
           <span>🏠</span> Inicio
         </a>
         
-        <!-- Enlace: Productos con Menú Desplegable de Marcas Oficiales -->
+        <!-- Enlace: Productos con Menú Desplegable de Marcas Oficiales con Logos -->
         <div class="relative group">
           <button 
             type="button"
@@ -210,26 +282,43 @@ const obtenerTotalCarrito = () => {
             <span>🛍️</span> Productos <span class="text-xs transition-transform group-hover:rotate-180">▼</span>
           </button>
 
-          <!-- Menú Flotante de Marcas -->
-          <div class="absolute left-0 top-full mt-1.5 w-52 bg-white rounded-2xl shadow-2xl border border-gray-100 p-2 hidden group-hover:block transition-all z-50">
+          <!-- Menú Flotante de Marcas con Logos Oficiales -->
+          <div class="absolute left-0 top-full mt-1.5 w-56 bg-white rounded-2xl shadow-2xl border border-gray-100 p-2 hidden group-hover:block transition-all z-50">
             <p class="text-[10px] font-black uppercase text-gray-400 px-3 py-1 tracking-wider">
-              Filtrar por Marca:
+              Filtrar por Marca Oficial:
             </p>
             <div class="flex flex-col gap-0.5">
               <button 
                 v-for="marca in listaMarcasNav" 
                 :key="marca.nombre"
                 @click="navegarAMarca(marca.nombre)"
-                class="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-gray-700 hover:bg-purple-50 hover:text-[#6b4e8b] transition-colors w-full text-left cursor-pointer"
+                class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-gray-700 hover:bg-purple-50 hover:text-[#6b4e8b] transition-colors w-full text-left cursor-pointer"
               >
-                <span>{{ marca.icono }}</span>
+                <img 
+                  v-if="obtenerLogoMarca(marca.nombre)" 
+                  :src="obtenerLogoMarca(marca.nombre)" 
+                  class="w-5 h-5 object-contain rounded-full bg-white p-0.5 shadow-sm inline-block shrink-0" 
+                  :alt="marca.nombre" 
+                />
+                <span v-else>{{ marca.icono }}</span>
                 <span>{{ marca.nombre }}</span>
               </button>
             </div>
           </div>
         </div>
         
-        <!-- Enlace: Acerca de Nosotros (100% Funcional) -->
+        <!-- Enlace: Mis Pedidos / Seguimiento (Permanente y siempre accesible) -->
+        <button 
+          type="button"
+          @click="pantallaActual = 'seguimiento'" 
+          :class="pantallaActual === 'seguimiento' ? 'bg-[#6b4e8b] text-white shadow-sm' : 'text-gray-800 hover:text-green-900 hover:bg-white/60'"
+          class="flex items-center gap-1.5 font-bold px-3 py-1.5 rounded-full text-sm transition-all cursor-pointer"
+          title="Rastrear mis pedidos en tiempo real"
+        >
+          <span>🚚</span> Seguimiento
+        </button>
+
+        <!-- Enlace: Acerca de Nosotros -->
         <button 
           type="button"
           @click="pantallaActual = 'acerca'" 
@@ -249,13 +338,13 @@ const obtenerTotalCarrito = () => {
           <span>⭐</span> Opiniones
         </button>
 
-        <!-- Enlace: Panel de Administrador (Inventario y Clientes) -->
+        <!-- Enlace: Panel de Administrador (Protegido por Clave) -->
         <button 
           type="button"
-          @click="pantallaActual = 'admin'" 
+          @click="intentarAccesoAdmin" 
           :class="pantallaActual === 'admin' ? 'bg-purple-900 text-white shadow-md' : 'text-purple-900 hover:bg-purple-100'"
           class="flex items-center gap-1.5 font-black px-3.5 py-1.5 rounded-full text-sm transition-all cursor-pointer border border-purple-300"
-          title="Panel Administrativo de Inventario y Usuarios"
+          title="Panel exclusivo para personal administrativo"
         >
           <span>⚙️</span> Administrador
         </button>
@@ -372,21 +461,29 @@ const obtenerTotalCarrito = () => {
             Has iniciado sesión en Cachivaches NANA con la cuenta: <strong class="text-purple-900">{{ correoUsuarioActivo }}</strong>
           </p>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-6">
             <button 
               type="button"
               @click="pantallaActual = 'productos'"
-              class="bg-[#6b4e8b] hover:bg-[#5a3f75] text-white font-bold py-3.5 px-4 rounded-xl shadow-md transition-all active:scale-95 text-xs uppercase tracking-wider cursor-pointer flex items-center justify-center gap-2"
+              class="bg-[#6b4e8b] hover:bg-[#5a3f75] text-white font-bold py-3 px-3 rounded-xl shadow-md transition-all active:scale-95 text-xs uppercase tracking-wider cursor-pointer flex items-center justify-center gap-2"
             >
-              <span>🛍️</span> Ver Catálogo Multimarca
+              <span>🛍️</span> Ver Catálogo
             </button>
             
             <button 
               type="button"
-              @click="pantallaActual = 'carrito'"
-              class="bg-white hover:bg-gray-50 text-gray-800 border border-gray-200 font-bold py-3.5 px-4 rounded-xl shadow-sm transition-all active:scale-95 text-xs uppercase tracking-wider cursor-pointer flex items-center justify-center gap-2"
+              @click="pantallaActual = 'seguimiento'"
+              class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-3 rounded-xl shadow-md transition-all active:scale-95 text-xs uppercase tracking-wider cursor-pointer flex items-center justify-center gap-2"
             >
-              <span>🛒</span> Ver Mi Carrito ({{ carrito.reduce((sum, item) => sum + item.cantidad, 0) }})
+              <span>🚚</span> Mis Pedidos
+            </button>
+
+            <button 
+              type="button"
+              @click="pantallaActual = 'carrito'"
+              class="bg-white hover:bg-gray-50 text-gray-800 border border-gray-200 font-bold py-3 px-3 rounded-xl shadow-sm transition-all active:scale-95 text-xs uppercase tracking-wider cursor-pointer flex items-center justify-center gap-2"
+            >
+              <span>🛒</span> Carrito ({{ carrito.reduce((sum, item) => sum + item.cantidad, 0) }})
             </button>
           </div>
         </div>
@@ -472,12 +569,13 @@ const obtenerTotalCarrito = () => {
         />
       </div>
 
-      <!-- PANTALLA E: CARRITO DE COMPRAS -->
+      <!-- PANTALLA E: CARRITO DE COMPRAS (RESTRINGE PEDIDO SI NO HA INICIADO SESIÓN) -->
       <div v-else-if="pantallaActual === 'carrito'">
         <nana_carrito 
           :items="carrito" 
           :onIrAPagar="() => pantallaActual = 'pagos'" 
           @regresarAlCatalogo="pantallaActual = 'productos'" 
+          @solicitarLogin="pantallaActual = 'inicio'"
         />
       </div>
 
@@ -489,9 +587,9 @@ const obtenerTotalCarrito = () => {
         />
       </div>
 
-      <!-- PANTALLA G: SEGUIMIENTO DE ORDEN -->
+      <!-- PANTALLA G: SEGUIMIENTO DE ORDEN Y RASTREO (PERMITE ENTRAR SIEMPRE) -->
       <div v-else-if="pantallaActual === 'seguimiento'">
-        <nana_seguimiento />
+        <nana_seguimiento @irAProductos="pantallaActual = 'productos'" />
       </div>
 
       <!-- PANTALLA H: OPINIONES Y CALIFICACIONES -->
@@ -499,12 +597,61 @@ const obtenerTotalCarrito = () => {
         <nana_calificaciones />
       </div>
       
-      <!-- PANTALLA I: PANEL ADMINISTRATIVO (INVENTARIO Y CLIENTES) -->
+      <!-- PANTALLA I: PANEL ADMINISTRATIVO (SOLO ADMINISTRADOR AUTORIZADO) -->
       <div v-else-if="pantallaActual === 'admin'">
-        <nana_admin />
+        <div v-if="esAdminAutenticado">
+          <nana_admin @salirAdmin="salirDeAdmin" />
+        </div>
+        <div v-else class="max-w-md mx-auto bg-white rounded-3xl p-8 shadow-xl text-center">
+          <span class="text-4xl block mb-2">🔒</span>
+          <h3 class="text-xl font-black text-gray-800 mb-2">Acceso Administrativo Requerido</h3>
+          <p class="text-xs text-gray-600 mb-4">Solo el personal administrador puede acceder a este panel de control.</p>
+          <button @click="intentarAccesoAdmin" class="bg-purple-900 text-white font-bold py-2.5 px-6 rounded-xl text-xs cursor-pointer">
+            Validar Contraseña de Administrador
+          </button>
+        </div>
       </div>
 
     </main>
+
+    <!-- MODAL DE ACCESO ADMINISTRATIVO SEGURO -->
+    <div v-if="mostrarModalClaveAdmin" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-gray-100 text-left">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xl font-black text-gray-800 flex items-center gap-2">
+            <span>🔒</span> Acceso de Administrador
+          </h3>
+          <button @click="mostrarModalClaveAdmin = false" class="text-gray-400 hover:text-gray-600 font-bold text-lg cursor-pointer">✕</button>
+        </div>
+        <p class="text-xs text-gray-600 mb-4">
+          Este módulo está restringido exclusivamente para el administrador de Cachivaches NANA. Ingrese la contraseña de administración para continuar:
+        </p>
+
+        <form @submit.prevent="validarClaveAdmin" class="flex flex-col gap-3.5">
+          <div class="flex flex-col gap-1">
+            <label class="font-bold text-gray-700 text-xs">Contraseña de Administrador</label>
+            <input 
+              v-model="claveAdminInput" 
+              type="password" 
+              placeholder="Ingrese clave de administrador" 
+              required 
+              autofocus
+              class="bg-gray-50 border p-2.5 rounded-xl text-xs outline-none focus:border-purple-900 focus:bg-white font-mono"
+            />
+            <span v-if="errorClaveAdmin" class="text-[11px] text-red-600 font-bold mt-1">{{ errorClaveAdmin }}</span>
+          </div>
+
+          <div class="flex justify-end gap-2 mt-2">
+            <button type="button" @click="mostrarModalClaveAdmin = false" class="px-4 py-2 border rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-50 cursor-pointer">
+              Cancelar
+            </button>
+            <button type="submit" class="px-5 py-2 bg-purple-900 hover:bg-purple-800 text-white rounded-xl text-xs font-bold shadow cursor-pointer">
+              Ingresar al Panel 🚀
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
 
     <!-- ==================================================== -->
     <!-- 4. FOOTER INSTITUCIONAL -->
